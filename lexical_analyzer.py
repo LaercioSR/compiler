@@ -8,6 +8,7 @@ final_states = [
 retroactive_states = [
     2, 4, 7, 10, 13, 18, 21, 24, 27, 32
 ]
+matrix = [[]] * 100
 matrix = [
     # [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
     # [L, D, _, ", ', +, -, *, /, =,  !,  >,  <,  &,  |,  %,  #,  {,  },  (,  ),  [,  ],  ;,  .,  ,,  \, \n,  S, outros],
@@ -135,34 +136,40 @@ def getColumn(character):
         return 28
     elif (code_ascii >= 32 and code_ascii <= 126) and code_ascii != 34 and code_ascii != 39:
         return 29
-
+    else:
+        return 52 #estado de erro
+        
 index = 1
 while os.path.isfile(f'input/entrada{index}.txt'):
     input = open(f'input/entrada{index}.txt', 'r')
     output = open(f'output/saida{index}.txt', 'w')
-    text = input.read()
-
-    i = 0
-    state = 0
-    lexeme = ''
-    while i < len(text):
-        char = text[i]
-        lexeme += char
-        column = getColumn(char)
-        state = matrix[state][column]
-        # output.write(f"{char} - {column}\n")
-        if state in final_states:
-            if state in retroactive_states:
-                i -= 1
-                lexeme = lexeme[:-1].strip()
-            output.write(f"State: {state} - Token: {lexeme}\n")
+    text = input.readlines()
+    #para cada linha do arquivo
+    num=1
+    for line in text:
+        i = 0
+        state = 0
+        lexeme = ''
+        while i < len(line):
+            char = line[i]
+            lexeme += char
+            column = getColumn(char)
+            if column >= 52:
+                output.write(f"{num} CaMF {char}\n")
+            else:
+                state = matrix[state][column]
+                # output.write(f"{char} - {column}\n")
+                if state in final_states:
+                    if state in retroactive_states:
+                        i -= 1
+                        lexeme = lexeme[:-1].strip()
+                    output.write(f"{num} {lexeme}\n")
+            
             state = 0
             lexeme = ''
-        elif state == '-':
-            state = 0
-            lexeme = ''
-        i += 1
-    
+            i += 1
+        num += 1
+        
     # output.write(f'Output number {index}')
     output.close()
 
