@@ -36,7 +36,7 @@ matrix = [
     [37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 21, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,     38,   0],
     [37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 21, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37,     38,   0],
     [],
-    [23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 26, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,     38,   0],
+    [23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 26, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,     38,   0],
     [],
     [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 25, 24,     38,   0],
     [],
@@ -55,6 +55,10 @@ matrix = [
     [],
     [18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,     38,   0]
 ]
+
+type = {2: "IDE", 4:"NRO", 7:"NMF", 12:"ART", 18:"REL", 
+        21:"LOG", 23:"DEL", 29:"CoMF", 31:"CAD", 32:"CMF",
+        35:"CAR", 36:"CaMF", 37:"SIB", 38:"SII"}
 
 def getColumn(character):
     code_ascii = ord(character)
@@ -114,8 +118,10 @@ def getColumn(character):
         return 26
     elif character == '\\':
         return 27
-    elif character == '\n' or character == '\t':
+    elif character == '\n':
         return 28
+    elif character == '\t':
+        return 32
     elif (code_ascii >= 32 and code_ascii <= 126) and code_ascii != 34 and code_ascii != 39:
         return 29
     elif code_ascii == 3 or code_ascii == 4:
@@ -145,7 +151,8 @@ while os.path.isfile(f'input/entrada{index}.txt'):
                     i -= 1
                     lexeme = lexeme[:-1]
                 lexeme.strip()
-                output.write(f"{num_line} state: {state} {lexeme}\n")
+                if state != 25 and state != 28: 
+                    output.write(f"{num_line} {type[state]} {lexeme}\n")
             
                 state = 0
                 lexeme = ''
