@@ -38,10 +38,10 @@ matrix = [
     [],
     [23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 26, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,     38,   0],
     [],
-    [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 25, 24,     38,   0],
+    [24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 25, 24,     24,   0],
     [],
-    [26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 27, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,     38,  29],
-    [26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 28, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,     38,  29],
+    [26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 27, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,     26,  29],
+    [26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 28, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,     26,  29],
     [],
     [],
     [30, 30, 30, 31, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 32, 30,     38,  32],
@@ -58,7 +58,7 @@ matrix = [
 
 type = {2: "IDE", 4:"NRO", 7:"NMF", 12:"ART", 18:"REL", 
         21:"LOG", 23:"DEL", 29:"CoMF", 31:"CAD", 32:"CMF",
-        35:"CAR", 36:"CaMF", 37:"SIB", 38:"SII", 40:"PRE"}
+        35:"CAR", 36:"CaMF", 37:"SIB", 38:"SII", 40:"PRE", 25:"CML", 28:"CMB"}
 
 reserved_words = ["algoritmo", "variaveis", "constantes", "registro",
  "funcao", "retorno", "vazio", "se", "senao", "enquanto",
@@ -139,10 +139,10 @@ while os.path.isfile(f'input/entrada{index}.txt'):
     text = input.readlines()
     #para cada linha do arquivo
     num_line = 1
+    state = 0
+    lexeme = ''
     for line in text:
         i = 0
-        state = 0
-        lexeme = ''
         while i < len(line):
             char = line[i]
             lexeme += char
@@ -154,9 +154,8 @@ while os.path.isfile(f'input/entrada{index}.txt'):
                     i -= 1
                     lexeme = lexeme[:-1]
                 lexeme = lexeme.strip()
-                for r in reserved_words:
-                    if lexeme == r: 
-                        state = 40
+                if lexeme in reserved_words:
+                    state = 40
                 if state != 25 and state != 28: 
                     if num_line<10: output.write("0")
                     output.write(f"{num_line} {type[state]} {lexeme}\n")
