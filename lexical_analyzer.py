@@ -58,7 +58,12 @@ matrix = [
 
 type = {2: "IDE", 4:"NRO", 7:"NMF", 12:"ART", 18:"REL", 
         21:"LOG", 23:"DEL", 29:"CoMF", 31:"CAD", 32:"CMF",
-        35:"CAR", 36:"CaMF", 37:"SIB", 38:"SII"}
+        35:"CAR", 36:"CaMF", 37:"SIB", 38:"SII", 39:"PRE"}
+
+reserved_words = ["algoritmo", "variaveis", "constantes", "registro",
+ "funcao", "retorno", "vazio", "se", "senao", "enquanto",
+ "para", "leia", "escreva", "inteiro", "real", "booleano", "char",
+ "cadeia", "verdadeiro", "falso"]
 
 def getColumn(character):
     code_ascii = ord(character)
@@ -120,15 +125,20 @@ def getColumn(character):
         return 27
     elif character == '\n':
         return 28
-    elif character == '\t':
-        return 32
     elif (code_ascii >= 32 and code_ascii <= 126) and code_ascii != 34 and code_ascii != 39:
         return 29
     elif code_ascii == 3 or code_ascii == 4:
         return 31
     else: # Invalid character
         return 30
-        
+
+# divide uma string de acordo com os delimitadores listados        
+delimiters = ' ', ',', ';', '(', ')', '{', '}', '=', '[', ']'
+def split(string, maxsplit=0):
+    import re
+    regexPattern = '|'.join(map(re.escape, delimiters))
+    return re.split(regexPattern, string, maxsplit)
+
 index = 1
 while os.path.isfile(f'input/entrada{index}.txt'):
     input = open(f'input/entrada{index}.txt', 'r')
@@ -140,6 +150,15 @@ while os.path.isfile(f'input/entrada{index}.txt'):
         i = 0
         state = 0
         lexeme = ''
+        # separa palavras de uma linha para encontrar palavras reservadas, e retira da linha as encontradas.
+        words = split(line)
+        for s in words:
+            for r in reserved_words:
+                if s == r: 
+                    if num_line<10: output.write("0")
+                    output.write(f"{num_line} PRE {r}\n")
+                    line = line.replace(r, "")
+
         while i < len(line):
             char = line[i]
             lexeme += char
@@ -152,6 +171,7 @@ while os.path.isfile(f'input/entrada{index}.txt'):
                     lexeme = lexeme[:-1]
                 lexeme.strip()
                 if state != 25 and state != 28: 
+                    if num_line<10: output.write("0")
                     output.write(f"{num_line} {type[state]} {lexeme}\n")
             
                 state = 0
