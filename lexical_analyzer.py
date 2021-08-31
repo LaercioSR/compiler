@@ -32,10 +32,10 @@ matrix = {
     10: [12, 12, 12, 12, 12, 12, 11, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,     38,   0],
     11: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,     38,   0],
     12: [18, 18, 18, 18, 18, 18, 18, 18, 18, 14, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,     38,   0],
-    13: [18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,     38,   0],
-    14: [18, 18, 18, 18, 18, 18, 18, 18, 18, 39, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,     38,   0],
+    13: [18, 18, 18, 18, 18, 18, 18, 18, 18, 14, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,     38,   0],
+    14: [18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,     38,   0],
     15: [18, 18, 18, 18, 18, 18, 18, 18, 18, 39, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18,     38,   0],
-    16: [21, 21, 21, 21, 21, 21, 21, 21, 21, 18, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,     38,   0],
+    16: [21, 21, 21, 21, 21, 21, 21, 21, 21, 39, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,     38,   0],
     19: [41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 42, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41,     38,   0],
     20: [41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 42, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41, 41,     38,   0],
     22: [23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 26, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23, 23,     38,   0],
@@ -117,7 +117,7 @@ def getColumn(character):
         return 24
     elif character == ',':
         return 25
-    elif character == ' ':
+    elif character == ' ' or character == '\t':
         return 26
     elif character == '\\':
         return 27
@@ -148,10 +148,6 @@ while os.path.isfile(f'input/entrada{index}.txt'):
             lexeme += char
             column = getColumn(char)
             previous_state = state
-            try:
-                state = matrix[previous_state][column]
-            except:
-                print(f"previous_state: {previous_state} - column: {column}")
             state = matrix[previous_state][column]
             print(f"char: {char} - ascii: {ord(char)} - state: {state} - lexeme: {lexeme}")
             if state in final_states:
@@ -183,19 +179,20 @@ while os.path.isfile(f'input/entrada{index}.txt'):
             lexeme = lexeme.strip()
             errors.append({'lexeme': lexeme, 'state': state, 'line': num_line})
             lexeme = ''
+            state = 0
         num_line += 1
-    if state == 26 or state == 27:
+    if state in [26, 27, 30, 34]:
+        num_line -= 1
         lexeme = lexeme.replace('\n', ' ').strip()
         errors.append({'lexeme': lexeme, 'state': 29, 'line': num_line})
     for token in tokens:
         if token['line'] < 10:
             token['line'] = f"0{token['line']}"
         output.write(f"{token['line']} {type[token['state']]} {token['lexeme']}\n")
-    output.write("\n")   
     for error in errors:
         if error['line'] < 10:
             error['line'] = f"0{error['line']}"
-        output.write(f"{error['line']} {type[error['state']]} {error['lexeme']}\n") 
+        output.write(f"\n{error['line']} {type[error['state']]} {error['lexeme']}") 
     output.close()
 
     index += 1
