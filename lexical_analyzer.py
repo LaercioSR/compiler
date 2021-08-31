@@ -130,69 +130,70 @@ def getColumn(character):
     else: # Invalid character
         return 30
 
-index = 1
-while os.path.isfile(f'input/entrada{index}.txt'):
-    input = open(f'input/entrada{index}.txt', 'r')
-    output = open(f'output/saida{index}.txt', 'w')
-    text = input.readlines()
-    tokens = []
-    errors = []
-    #para cada linha do arquivo
-    num_line = 1
-    state = 0
-    lexeme = ''
-    for line in text:
-        i = 0
-        while i < len(line):
-            char = line[i]
-            lexeme += char
-            column = getColumn(char)
-            previous_state = state
-            state = matrix[previous_state][column]
-            print(f"char: {char} - ascii: {ord(char)} - state: {state} - lexeme: {lexeme}")
-            if state in final_states:
-                if previous_state in retroactive_states:
-                    i -= 1
-                    lexeme = lexeme[:-1]
+def scanner():
+    index = 0
+    while os.path.isfile(f'input/entrada{index}.txt'):
+        input = open(f'input/entrada{index}.txt', 'r')
+        output = open(f'output/saida{index}.txt', 'w')
+        text = input.readlines()
+        tokens = []
+        errors = []
+        #para cada linha do arquivo
+        num_line = 1
+        state = 0
+        lexeme = ''
+        for line in text:
+            i = 0
+            while i < len(line):
+                char = line[i]
+                lexeme += char
+                column = getColumn(char)
+                previous_state = state
+                state = matrix[previous_state][column]
+                print(f"char: {char} - ascii: {ord(char)} - state: {state} - lexeme: {lexeme}")
+                if state in final_states:
+                    if previous_state in retroactive_states:
+                        i -= 1
+                        lexeme = lexeme[:-1]
+                    lexeme = lexeme.strip()
+                    if state == 2 and lexeme in reserved_words:
+                        state = 40
+                    if state != 25 and state != 28:
+                        if state not in error_states:
+                            tokens.append({'lexeme': lexeme, 'state': state, 'line': num_line})
+                        else:
+                            errors.append({'lexeme': lexeme, 'state': state, 'line': num_line})
+                
+                    state = 0
+                    lexeme = ''
+                if previous_state in error_states and state == 0:
+                    if previous_state in retroactive_states:
+                        i -= 1
+                        lexeme = lexeme[:-1]
+                    lexeme = lexeme.strip()
+                    errors.append({'lexeme': lexeme, 'state': previous_state, 'line': num_line})
+                    lexeme = ''
+                i += 1
+            if state in error_states:
                 lexeme = lexeme.strip()
-                if state == 2 and lexeme in reserved_words:
-                    state = 40
-                if state != 25 and state != 28:
-                    if state not in error_states:
-                        tokens.append({'lexeme': lexeme, 'state': state, 'line': num_line})
-                    else:
-                        errors.append({'lexeme': lexeme, 'state': state, 'line': num_line})
-                    # if num_line<10: output.write("0")
-                    # output.write(f"{num_line} {type[state]} {lexeme}\n")
-            
+                errors.append({'lexeme': lexeme, 'state': state, 'line': num_line})
+                lexeme = ''
                 state = 0
-                lexeme = ''
-            if previous_state in error_states and state == 0:
-                if previous_state in retroactive_states:
-                    i -= 1
-                    lexeme = lexeme[:-1]
-                lexeme = lexeme.strip()
-                errors.append({'lexeme': lexeme, 'state': previous_state, 'line': num_line})
-                lexeme = ''
-            i += 1
-        if state in error_states:
-            lexeme = lexeme.strip()
-            errors.append({'lexeme': lexeme, 'state': state, 'line': num_line})
-            lexeme = ''
-            state = 0
-        num_line += 1
-    if state in [26, 27, 30, 34]:
-        num_line -= 1
-        lexeme = lexeme.replace('\n', ' ').strip()
-        errors.append({'lexeme': lexeme, 'state': 29, 'line': num_line})
-    for token in tokens:
-        if token['line'] < 10:
-            token['line'] = f"0{token['line']}"
-        output.write(f"{token['line']} {type[token['state']]} {token['lexeme']}\n")
-    for error in errors:
-        if error['line'] < 10:
-            error['line'] = f"0{error['line']}"
-        output.write(f"\n{error['line']} {type[error['state']]} {error['lexeme']}") 
-    output.close()
+            num_line += 1
+        if state in [26, 27, 30, 34]:
+            num_line -= lexeme.count('\n')
+            lexeme = lexeme.replace('\n', ' ').strip()
+            errors.append({'lexeme': lexeme, 'state': 29, 'line': num_line})
+        for token in tokens:
+            if token['line'] < 10:
+                token['line'] = f"0{token['line']}"
+            output.write(f"{token['line']} {type[token['state']]} {token['lexeme']}\n")
+        for error in errors:
+            if error['line'] < 10:
+                error['line'] = f"0{error['line']}"
+            output.write(f"\n{error['line']} {type[error['state']]} {error['lexeme']}") 
+        output.close()
 
-    index += 1
+        index += 1
+
+scanner()
