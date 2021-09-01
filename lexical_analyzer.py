@@ -1,11 +1,6 @@
 from os import error
 import os, os.path
 
-# final_states = [
-#     2, 4, 7, 12, 18, 21, 
-#     23, 25, 28, 29, 31, 
-#     32, 35, 36, 37, 38, 41
-# ]
 final_states = [
     2, 4, 12, 18, 21, 
     23, 25, 28, 29, 31, 
@@ -15,8 +10,7 @@ retroactive_states = [
     1, 3, 5, 6, 8, 9, 
     10, 11, 13, 14, 15, 
     39, 16, 17, 22, 37, 
-    19, 20, 42,
-    7,
+    19, 20, 42, 7,
 ]
 matrix = {
       # [ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,     30,  31],
@@ -53,17 +47,21 @@ matrix = {
     44: [36, 36, 36, 34, 34, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36, 34, 36, 36,     36, 36]
 }
 
-type = {2: "IDE", 4:"NRO", 7:"NMF", 12:"ART", 18:"REL", 
-        21:"LOG", 23:"DEL", 29:"CoMF", 31:"CAD", 32:"CMF",
-        35:"CAR", 36:"CaMF", 37:"SIB", 38:"SII", 40:"PRE",
-        41:"OpMF"}
+type = {
+    2: "IDE", 4:"NRO", 7:"NMF", 12:"ART", 18:"REL", 
+    21:"LOG", 23:"DEL", 29:"CoMF", 31:"CAD", 32:"CMF",
+    35:"CAR", 36:"CaMF", 37:"SIB", 38:"SII", 40:"PRE",
+    41:"OpMF"
+}
 
 error_states = [7, 29, 32, 36, 37, 38, 41]
 
-reserved_words = [ "algoritmo", "variaveis", "constantes", "registro",
- "funcao", "retorno", "vazio", "se", "senao", "enquanto",
- "para", "leia", "escreva", "inteiro", "real", "booleano", "char",
- "cadeia", "verdadeiro", "falso" ]
+reserved_words = [ 
+    "algoritmo", "variaveis", "constantes", "registro",
+    "funcao", "retorno", "vazio", "se", "senao", "enquanto",
+    "para", "leia", "escreva", "inteiro", "real", "booleano", 
+    "char", "cadeia", "verdadeiro", "falso" 
+]
 
 def getColumn(character):
     code_ascii = ord(character)
@@ -149,8 +147,7 @@ def scanner():
         text = input.readlines()
         tokens = []
         errors = []
-        #para cada linha do arquivo
-        num_line = 1
+        num_line = 1    # line counter
         state = 0
         lexeme = ''
         for line in text:
@@ -162,7 +159,6 @@ def scanner():
                 previous_state = state
                 state = matrix[previous_state][column]
                 
-                #print(f"char: {char} - ascii: {ord(char)} - state: {state} - lexeme: {lexeme}")
                 if state in final_states:
                     if previous_state in retroactive_states:
                         i -= 1
@@ -192,10 +188,13 @@ def scanner():
                 lexeme = ''
                 state = 0
             num_line += 1
+        
+        # Condition for if the file ends and certain lexemes are open
         if state in [26, 27, 30, 34]:
             num_line -= lexeme.count('\n')
             lexeme = lexeme.replace('\n', ' ').strip()
             errors.append({'lexeme': lexeme, 'state': 29, 'line': num_line})
+        
         for token in tokens:
             if token['line'] < 10:
                 token['line'] = f"0{token['line']}"
