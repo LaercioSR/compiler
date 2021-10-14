@@ -1,38 +1,57 @@
 class Analyzer:
     def __init__(self, input):
         self.input = input 
-        self.lookahead = 0
+        self.lookahead = input[0]
         self.i = 0
 
     def match(self, t):
-        if t == self.lookahead:
+        if t == self.lookahead['lexeme']:
             self.lookahead = self.next_terminal()
         else:
-            print("sintax error")
+            print(self.lookahead['lexeme'], t, " sintax error match")
 
     def next_terminal(self):
-        self.i = self.i+1
+        if(self.i < len(input)-1): self.i = self.i+1
         return self.input[self.i]
 
+    def start(self):
+        if self.lookahead['lexeme'] == 'algoritmo':
+            self.match('algoritmo')
+            return self.algoritmo()
+        print("sintax error start"); return False
+
+    def algoritmo(self):
+        if self.lookahead['lexeme'] == '{':
+            self.match('{')
+            self.conteudo()
+            self.match('}')
+            return True
+        print(self.lookahead, " sintax error algoritmo"); return False
+
+    def conteudo(self):
+        if self.lookahead['lexeme'] == 'escreva':
+            self.match('escreva')
+            return self.escreva()
+        print(self.lookahead['lexeme'], " sintax error escreva")
+
     def escreva(self):
-        if self.lookahead == '(':
+        if self.lookahead['lexeme'] == '(':
             self.match('(')
             if self.escont():
                 return True
         # caso alguma função retorne um erro ou o erro esteja no escreva, imprime msg de erro
-        print("sintax error"); return False
+        return False
 
     def escont(self):
         if self.acessovar() or self.cadeia() or self.char():
             return self.esfim()
-        else:
-            print("sintax error"); return False
+        print("sintax error"); return False
 
     def esfim(self):
-        if self.lookahead == ',':
+        if self.lookahead['lexeme'] == ',':
             self.match(',')
             self.escont()
-        elif self.lookahead == ')':
+        elif self.lookahead['lexeme'] == ')':
             self.match(')')
             self.match(';')
         else:
@@ -43,119 +62,75 @@ class Analyzer:
         return self.ide() and self.acessovarcont()
 
     def acessovarcont(self):
-        if self.lookahead == '.':
+        if self.lookahead['lexeme'] == '.':
             self.match('.')
             self.acessovar()
-        elif self.lookahead == '[':
+        elif self.lookahead['lexeme'] == '[':
             self.match('[')
             self.nro()
             self.match(']')
             self.acessovarcontb()
-        else:
-            print("sintax error"); return False
+        else: 
+            return False
         return True
 
     def acessovarcontb(self):
-        if self.lookahead == '[':
+        if self.lookahead['lexeme'] == '[':
             self.match('[')
             self.nro()
             self.match(']')
             self.acessovarcontc()
-        else:
-            print("sintax error"); return False
-        return True
+            return True
+        print("sintax error"); return False
+        
 
     def acessovarcontc(self):
-        if self.lookahead == '[':
+        if self.lookahead['lexeme'] == '[':
             self.match('[')
             self.nro()
             self.match(']')
-        else:
-            print("sintax error"); return False
-        return True
+            return True
+        print("sintax error"); return False
 
     def cadeia(self):
-        if self.lookahead == '\"':
-            self.match('\"')
-            self.cadcont()
-            self.match('\"')
-        else:
-            print("sintax error"); return False
-
-    def cadcont(self):
-        if(self.letra() or self.digito() or self.simbolo or self.charspec):
-            return self.cadcont()
-        else: 
-            print("sintax error"); return False
+        if self.lookahead['type'] == 'CAD':
+            self.match(self.lookahead['lexeme'])
+            return True
+        return False
 
     def char(self):
-        if self.lookahead == '\'':
-            self.match('\'')
-            self.letra()
-            self.match('\'')
-        elif self.lookahead == '\'':
-            self.match('\'')
-            self.digito()
-            self.match('\'')
-        elif self.lookahead == '\'':
-            self.match('\'')
-            self.simbolo()
-            self.match('\'')
-        elif self.lookahead == '\'':
-            self.match('\'')
-            self.charspec()
-            self.match('\'')
-        else:
-            print("sintax error"); return False
-        return True
-
-    def charspec(self):
-        if self.lookahead == '\\\'' or self.lookahead == '\\\"':
-            self.match(self.lookahead)
-        else:
-            print("sintax error"); return False
-        return True
-
-    def letra(self):
-        if self.lookahead >= 'a' and self.lookahead <= 'z':
-            self.match(self.lookahead)
-        elif self.lookahead >= 'A' and self.lookahead <= 'Z':
-            self.match(self.lookahead)
-        else:
-            print("sintax error"); return False
-        return True
+        if self.lookahead['type'] == 'CAR':
+            self.match(self.lookahead['lexeme'])
+            return True
+        return False
 
     def ide(self):
-        return self.letra() and self.idecont()
-
-    def idecont(self):
-        if self.lookahead == '_' or self.lookahead == ' ':
-            self.match(self.lookahead)
-            return self.ide()
-        elif self.letra() or self.digito():
-            return self.ide()
-
-        print("sintax error")
-        return False
-
-    def digito(self):
-        if self.lookahead >= 0 or self.lookahead <=9:
-            self.match(self.lookahead)
+        if self.lookahead['type'] == 'IDE':
+            self.match(self.lookahead['lexeme'])
             return True
-        print("sintax error")
         return False
-
+    
     def nro(self):
-        return self.digito() and self.nrocont()
+        if self.lookahead['type'] == 'NRO':
+            self.match(self.lookahead['lexeme'])
+            return True
+        print("sintax error"); return False
 
-    def nrocont(self):
-        if self.lookahead != ' ':
-            if self.digito():
-                return self.nrocont()
+    def simbolo(self):
+        if self.lookahead['type'] == 'SIB':
+            self.match(self.lookahead['lexeme'])
+            return True
+        print("sintax error"); return False
 
-            print("sintax error")
-            return False
-            
+# teste
+input = [{'lexeme': 'algoritmo', 'type': 'PRE', 'line': '01'}, 
+        {'lexeme': '{', 'type': 'DEL', 'line': '01'}, 
+        {'lexeme': 'escreva', 'type': 'PRE', 'line': '02'}, 
+        {'lexeme': '(', 'type': 'DEL', 'line': '02'}, 
+        {'lexeme': '"Hello world"', 'type': 'CAD', 'line': '02'}, 
+        {'lexeme': ')', 'type': 'DEL', 'line': '02'}, 
+        {'lexeme': ';', 'type': 'DEL', 'line': '02'}, 
+        {'lexeme': '}', 'type': 'DEL', 'line': '03'}]
 
-input = "escreva(\"hello world\");"       
-Analyzer(input).escreva()
+ans = Analyzer(input).start()
+print(ans)
