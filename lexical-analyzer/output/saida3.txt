@@ -1,0 +1,59 @@
+01 PRE inteiro
+01 IDE a
+01 REL =
+01 PRE leia
+01 DEL (
+01 CAD "Coloque um inteiro:"
+01 DEL )
+01 DEL ;
+02 PRE se
+02 DEL (
+02 IDE a
+02 REL <=
+02 NRO 9
+02 DEL )
+02 DEL {
+03 PRE escreva
+03 DEL (
+03 CAD "Isso eh uma unidade"
+03 DEL )
+03 DEL ;
+04 DEL }
+04 PRE senao
+04 PRE se
+04 DEL (
+04 IDE a
+04 REL <
+04 NRO 100
+04 DEL )
+04 DEL {
+05 PRE escreva
+05 DEL (
+05 CAD "Isso eh uma dezena"
+05 DEL )
+05 DEL ;
+06 DEL }
+06 PRE senao
+06 PRE se
+06 DEL (
+06 IDE a
+06 REL <=
+06 NRO 999
+06 DEL )
+06 DEL {
+07 PRE escreva
+07 DEL (
+07 CAD "Isso eh uma centena"
+07 DEL )
+07 DEL ;
+08 DEL }
+08 PRE senao
+08 DEL {
+09 PRE escreva
+09 DEL (
+09 CAD "Isso eh acima de centena"
+09 DEL )
+09 DEL ;
+10 DEL }
+
+SUCESSO!

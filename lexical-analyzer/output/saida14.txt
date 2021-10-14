@@ -1,0 +1,52 @@
+01 PRE cadeia
+01 REL =
+01 PRE leia
+01 DEL (
+01 CAD "\"Escreva isso\""
+01 DEL )
+01 DEL ;
+02 PRE se
+02 DEL (
+02 PRE cadeia
+02 REL ==
+02 CAD "\"Escreva isso\""
+02 DEL )
+02 DEL {
+03 PRE char
+03 REL =
+03 PRE leia
+03 DEL (
+03 DEL )
+03 DEL ;
+04 PRE se
+04 DEL (
+04 PRE char
+04 REL ==
+04 CAR 's'
+04 DEL )
+04 DEL {
+05 PRE escreva
+05 DEL (
+05 CAD "Parabens! voce acertou"
+05 DEL )
+05 DEL ;
+06 DEL }
+07 IDE entao
+07 DEL {
+08 PRE escreva
+08 DEL (
+08 CAD "voce errou, que pena"
+08 DEL )
+08 DEL ;
+09 DEL }
+10 DEL }
+11 IDE entao
+11 DEL {
+12 PRE escreva
+12 DEL (
+12 CAD "era pra escrever isso: \"Escreva isso\""
+12 DEL )
+12 DEL ;
+13 DEL }
+
+03 CMF "Voce escreveu certo?\n[s = sim e n = nao]"

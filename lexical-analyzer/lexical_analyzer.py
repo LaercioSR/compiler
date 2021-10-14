@@ -168,7 +168,7 @@ def scanner():
                         state = 40
                     if state != 25 and state != 28:
                         if state not in error_states:
-                            tokens.append({'lexeme': lexeme, 'state': state, 'line': num_line})
+                            tokens.append({'lexeme': lexeme, 'type': type[state], 'line': num_line})
                         else:
                             errors.append({'lexeme': lexeme, 'state': state, 'line': num_line})
                 
@@ -195,11 +195,13 @@ def scanner():
             lexeme = lexeme.replace('\n', ' ').strip()
             errors.append({'lexeme': lexeme, 'state': 29, 'line': num_line})
         
+        
         for token in tokens:
             if token['line'] < 10:
                 token['line'] = f"0{token['line']}"
-            output.write(f"{token['line']} {type[token['state']]} {token['lexeme']}\n")
-        
+            output.write(f"{token['line']} {token['type']} {token['lexeme']}\n")
+        print(tokens)
+
         if len(errors) == 0: output.write("\nSUCESSO!\n")
         for error in errors:
             if error['line'] < 10:

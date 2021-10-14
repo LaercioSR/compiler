@@ -1,0 +1,10 @@
+01 PRE algoritmo
+01 DEL {
+02 PRE escreva
+02 DEL (
+02 CAD "Hello world"
+02 DEL )
+02 DEL ;
+03 DEL }
+
+SUCESSO!
