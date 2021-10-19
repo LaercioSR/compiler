@@ -5,10 +5,13 @@ class SintaxAnalyzer:
         self.i = 0
 
     def match(self, t):
+        # print(f"{self.lookahead} == {t} : {t == self.lookahead['lexeme']}")
         if t == self.lookahead['lexeme']:
             self.lookahead = self.next_terminal()
+            return True
         else:
             print(self.lookahead['lexeme'], t, " sintax error match")
+            return False
 
     def next_terminal(self):
         if(self.i < len(self.input)-1): self.i = self.i+1
@@ -68,9 +71,8 @@ class SintaxAnalyzer:
             self.match('escreva')
             return self.escreva()
         elif self.lookahead['lexeme'] == 'leia':
-            #self.match('leia')
-            #return self.leia()
-            return True
+            self.match('leia')
+            return self.leia()
         elif self.lookahead['lexeme'] == 'para':
             #self.match('para')
             #return self.para()
@@ -101,6 +103,27 @@ class SintaxAnalyzer:
             self.match(';')
             return True
         return False
+
+    def leia(self):
+        if self.lookahead['lexeme'] == '(':
+            self.match('(')
+            return self.leiacont()
+        return False
+
+    def leiacont(self):
+        if self.acessovar():
+            return self.leiafim()
+        return False
+
+    def leiafim(self):
+        if self.lookahead['lexeme'] == ',':
+            self.match(',')
+            return self.leiacont()
+        elif self.lookahead['lexeme'] == ')':
+            self.match(')')
+            self.match(';')
+            return True
+        return False
             
     def acessovar(self):
         return self.ide() and self.acessovarcont()
@@ -114,8 +137,8 @@ class SintaxAnalyzer:
             self.nro()
             self.match(']')
             self.acessovarcontb()
-        else: 
-            return False
+        # else: 
+        #     return False
         return True
 
     def acessovarcontb(self):
