@@ -17,6 +17,16 @@ class SintaxAnalyzer:
         if(self.i < len(self.input)-1): self.i = self.i+1
         return self.input[self.i]
 
+    def error(self):
+        sync_tokens = [';']
+        print("sintax error linha: ", self.lookahead['line'])
+        
+        while(self.lookahead['lexeme'] not in sync_tokens):
+            self.lookahead = self.next_terminal()
+            if(self.i == len(self.input)-1):
+                break
+        self.lookahead = self.next_terminal()
+
     def start(self):
         if self.lookahead['lexeme'] == 'algoritmo':
             self.match('algoritmo')
@@ -39,14 +49,20 @@ class SintaxAnalyzer:
             ans = True
         if ans:
             return True
-        print("sintax error linha: ", self.lookahead['line']); return False
+        # print("sintax error linha: ", self.lookahead['line']); return False
+        return False
 
     def algoritmo(self):
         if self.lookahead['lexeme'] == '{':
             self.match('{')
             ans=True
-            while(ans and self.lookahead['lexeme'] != '}'):
-                ans = self.conteudo()
+            # while(ans and self.lookahead['lexeme'] != '}'):
+            #     ans = self.conteudo()
+            while(self.lookahead['lexeme'] != '}' and self.i < len(self.input)-1):
+                result = self.conteudo()
+                if not result:
+                    self.error()
+                    ans = result
             return ans and self.match('}')
         return False
 
