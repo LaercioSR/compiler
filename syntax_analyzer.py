@@ -72,9 +72,8 @@ class SintaxAnalyzer:
             #return self.variaveis()
             return True
         elif self.lookahead['lexeme'] == 'constantes':
-            #self.match('constantes')
-            #return self.constantes()
-            return True
+            self.match('constantes')
+            return self.constantes()
         elif self.lookahead['lexeme'] == 'se':
             #self.match('se')
             #return self.se()
@@ -204,3 +203,117 @@ class SintaxAnalyzer:
             self.match(self.lookahead['lexeme'])
             return True
         print("sintax error"); return False
+
+    def constantes(self):
+        if self.lookahead['lexeme'] == '{':
+            self.match('{')
+            return self.const()
+        return False
+
+    def const(self):
+        if self.tipo():
+            return self.constalt()
+        return False
+
+    def tipo(self):
+        if self.lookahead['lexeme'] == 'inteiro':
+            self.match('inteiro')
+        elif self.lookahead['lexeme'] == 'real':
+            self.match('real')
+        elif self.lookahead['lexeme'] == 'booleano':
+            self.match('booleano')
+        elif self.lookahead['lexeme'] == 'cadeia':
+            self.match('cadeia')
+        elif self.lookahead['lexeme'] == 'char':
+            self.match('char')
+        elif self.lookahead['lexeme'] == 'registro':
+            self.match('registro')
+        else:
+            return False
+        return True
+
+    def constalt(self):
+        if self.ide():
+            if self.varinit():
+                return self.constcont()
+        return False
+
+    def varinit(self):
+        if self.lookahead['lexeme'] == '=':
+            self.match('=')
+            return self.valor()
+        elif self.lookahead['lexeme'] == '[':
+            self.match('[')
+            ans = self.nro() and self.match(']')
+            return ans and self.varinitcontmatr()
+        return False
+
+    def varinitcontmatr(self):
+        ans = False
+        if self.lookahead['lexeme'] == '{':
+            self.match('{')
+            if self.vetor():
+                ans = self.match(',') and self.match('{')
+                ans = ans and self.vetor()
+        elif self.lookahead['lexeme'] == '[':
+            self.match('[')
+            if self.nro():
+                ans = self.match(']') and self.match('=') and self.match('{')
+                if ans and self.vetor():
+                    ans = self.match(',')
+                    self.match('{')
+                    if ans and self.vetor():
+                        ans = self.match(',') and self.match('{')
+                        ans = ans and self.vetor()
+                    else: ans = False
+                else: ans = False
+            else: ans = False
+        return ans
+            
+    def vetor(self):
+        if self.valor():
+            return self.vetorcont()
+        return False
+
+    def vetorcont(self):
+        if self.lookahead['lexeme'] == ',':
+            return self.vetor()
+        elif self.lookahead['lexeme'] == '}':
+            return True
+        return False
+
+    def constcont(self):
+        if self.lookahead['lexeme'] == ',':
+            self.match(',')
+            return self.constalt()
+        elif self.lookahead['lexeme'] == ';':
+            self.match(';')
+            return self.constfim()
+        return False
+
+    def constfim(self):
+        if self.lookahead['lexeme'] == '}':
+            return True
+        return self.const()
+
+    def valor(self):
+        if self.lookahead['lexeme'] == '-':
+            self.match('-')
+            return self.negativo()
+        elif self.lookahead['type'] == 'CAD':
+            return self.match(self.lookahead['lexeme'])
+        elif self.lookahead['type'] == 'CAR':
+            return self.match(self.lookahead['lexeme'])
+        elif self.nro() or self.bool() or self.acessovar():
+        # or self.exparitmetica() or self.exprelacional() or self.logica() or self.chamadafuncao():
+            return True
+        return False
+            
+    def bool(self):
+        if self.lookahead['lexeme'] == 'verdadeiro' or self.lookahead['lexeme'] == 'falso':
+            self.match(self.lookahead['lexeme'])
+            return True
+        return False
+
+    def negativo(self):
+        return self.nro() or self.acessovar()
