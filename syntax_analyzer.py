@@ -185,12 +185,13 @@ class SintaxAnalyzer:
         elif self.lookahead['lexeme'] == '(':
             self.match('(')
             return self.exparitmeticaparen()
+        return False
 
     def exparitmeticaparen(self):
         if self.exparitmetica() or  self.acessovar() or self.nro():
             self.match(')')
-            self.negativo()
             return self.exparitmeticacontb()
+        return False
 
     def exparitmeticacont(self):
         if self.lookahead['lexeme'] == '+':
@@ -207,6 +208,7 @@ class SintaxAnalyzer:
             return self.exparitmeticazero()
         elif self.exparitmeticacontincr():
             return True
+        return False
 
     def cadeia(self):
         if self.lookahead['type'] == 'CAD':
@@ -241,6 +243,7 @@ class SintaxAnalyzer:
     def negativo(self):
         if self.nro() or self.acessovar():
             return True
+        return False
 
     def constantes(self):
         if self.lookahead['lexeme'] == '{':
