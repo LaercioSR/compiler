@@ -28,6 +28,7 @@ class SintaxAnalyzer:
         self.lookahead = self.next_terminal()
 
     def start(self):
+        ans = False
         if self.lookahead['lexeme'] == 'algoritmo':
             self.match('algoritmo')
             ans = self.algoritmo()
