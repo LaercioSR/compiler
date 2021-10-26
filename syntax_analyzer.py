@@ -176,6 +176,39 @@ class SintaxAnalyzer:
             return True
         print("sintax error"); return False
 
+    def exparitmetica(self):
+        if self.acessovar() or self.nro():
+            return self.exparitmeticacont()
+        elif self.lookahead['lexeme'] == '-':
+            self.match('-')
+            self.negativo()
+            return self.exparitmeticacont()
+        elif self.lookahead['lexeme'] == '(':
+            self.match('(')
+            return self.exparitmeticaparen()
+
+    def exparitmeticaparen(self):
+        if self.exparitmetica() or  self.acessovar() or self.nro():
+            self.match(')')
+            self.negativo()
+            return self.exparitmeticacontb()
+
+    def exparitmeticacont(self):
+        if self.lookahead['lexeme'] == '+':
+            self.match('+')
+            return self.exparitmeticab()
+        elif self.lookahead['lexeme'] == '-':
+            self.match('-')
+            return self.exparitmeticab()
+        elif self.lookahead['lexeme'] == '*':
+            self.match('*')
+            return self.exparitmeticab()
+        elif self.lookahead['lexeme'] == '/':
+            self.match('/')
+            return self.exparitmeticazero()
+        elif self.exparitmeticacontincr():
+            return True
+
     def cadeia(self):
         if self.lookahead['type'] == 'CAD':
             self.match(self.lookahead['lexeme'])
@@ -205,3 +238,7 @@ class SintaxAnalyzer:
             self.match(self.lookahead['lexeme'])
             return True
         print("sintax error"); return False
+
+    def negativo(self):
+        if self.nro() or self.acessovar():
+            return True
