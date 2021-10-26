@@ -152,7 +152,7 @@ def scanner(folder_in, folder_out, index) -> list:
         if num_line < 10:
             nl = f"0{num_line}"
         else: 
-            nl = "num_line"
+            nl = f"{num_line}"
         while i < len(line):
             char = line[i]
             lexeme += char
@@ -196,7 +196,7 @@ def scanner(folder_in, folder_out, index) -> list:
         if num_line < 10:
             nl = f"0{num_line}"
         else: 
-            nl = "num_line"
+            nl = f"{num_line}"
         lexeme = lexeme.replace('\n', ' ').strip()
         errors.append({'lexeme': lexeme, 'state': 29, 'line': nl})
     
