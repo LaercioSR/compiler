@@ -19,7 +19,7 @@ class SintaxAnalyzer:
 
     def error(self):
         sync_tokens = [';']
-        print("sintax error linha: ", self.lookahead['line'])
+        print("sintax error linha: ", self.lookahead)
         
         while(self.lookahead['lexeme'] not in sync_tokens):
             self.lookahead = self.next_terminal()
@@ -37,13 +37,11 @@ class SintaxAnalyzer:
             #ans = self.funcao()
             ans = True
         elif self.lookahead['lexeme'] == 'variaveis':
-            #self.match('variaveis')
-            #ans = self.variaveis()
-            ans = True
+            self.match('variaveis')
+            ans = self.variaveis()
         elif self.lookahead['lexeme'] == 'constantes':
-            #self.match('constantes')
-            #ans = self.constantes()
-            ans = True
+            self.match('constantes')
+            ans = self.constantes()
         elif self.lookahead['lexeme'] == 'registro':
             #self.match('registro')
             #ans = self.registro()
@@ -69,9 +67,8 @@ class SintaxAnalyzer:
 
     def conteudo(self):
         if self.lookahead['lexeme'] == 'variaveis':
-            #self.match('variaveis')
-            #return self.variaveis()
-            return True
+            self.match('variaveis')
+            return self.variaveis()
         elif self.lookahead['lexeme'] == 'constantes':
             self.match('constantes')
             return self.constantes()
@@ -318,8 +315,10 @@ class SintaxAnalyzer:
 
     def vetorcont(self):
         if self.lookahead['lexeme'] == ',':
+            self.match(',')
             return self.vetor()
         elif self.lookahead['lexeme'] == '}':
+            self.match('}')
             return True
         return False
 
@@ -334,7 +333,7 @@ class SintaxAnalyzer:
 
     def constfim(self):
         if self.lookahead['lexeme'] == '}':
-            return True
+            return self.match('}')
         return self.const()
 
     def valor(self):
@@ -358,3 +357,39 @@ class SintaxAnalyzer:
 
     def negativo(self):
         return self.nro() or self.acessovar()
+
+    def variaveis(self):
+        if self.lookahead['lexeme'] == '{':
+            self.match('{')
+            return self.var()
+        return False
+    
+    def var(self):
+        ans=False
+        if self.tipo():
+            if self.ide():
+                if self.varcont():
+                    ans = True
+        return ans
+
+    def varalt(self):
+        if self.ide():
+            return self.varcont()        
+        return False
+
+    def varcont(self):
+        self.varinit()
+        return self.varfinal()
+
+    def varfinal(self):
+        if self.lookahead['lexeme'] == ',':
+            return self.varalt()
+        elif self.lookahead['lexeme'] == ';':
+            return self.varfim()
+        return False
+
+    def varfim(self):
+        if self.lookahead['lexeme'] == '}':
+            return self.match('}')
+        return self.var()
+    
