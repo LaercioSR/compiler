@@ -280,7 +280,20 @@ class SintaxAnalyzer:
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
             ans = self.nro() and self.match(']')
-            return ans and self.varinitcontmatr()
+            if ans:
+                return self.varinitcont()
+        return False
+
+    def varinitcont(self): 
+        if self.lookahead['lexeme'] == '=':
+            self.match('=')
+            if self.match('{'):
+                return self.vetor()
+        elif self.lookahead['lexeme'] == '[':
+            self.match('[')
+            ans = self.nro() and self.match(']')
+            if ans:
+                return self.varinitcontmatr()
         return False
 
     def varinitcontmatr(self):
@@ -380,8 +393,10 @@ class SintaxAnalyzer:
 
     def varfinal(self):
         if self.lookahead['lexeme'] == ',':
+            self.match(',')
             return self.varalt()
         elif self.lookahead['lexeme'] == ';':
+            self.match(';')
             return self.varfim()
         return False
 
