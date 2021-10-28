@@ -134,43 +134,41 @@ class SintaxAnalyzer:
             return self.leiacont()
         elif self.lookahead['lexeme'] == ')':
             self.match(')')
-            self.match(';')
-            return True
+            return self.match(';')
         return False
             
     def acessovar(self):
         return self.ide() and self.acessovarcont()
 
     def acessovarcont(self):
+        if self.lookahead['lexeme'] in [',', ')']:
+            return True
         if self.lookahead['lexeme'] == '.':
             self.match('.')
-            self.acessovar()
+            return self.acessovar()
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
-            self.nro()
-            self.match(']')
-            self.acessovarcontb()
-        # else: 
-        #     return False
-        return True
+            if self.nro() and self.match(']'):
+                return self.acessovarcontb()
+        return False
 
     def acessovarcontb(self):
+        if self.lookahead['lexeme'] in [',', ')']:
+            return True
         if self.lookahead['lexeme'] == '[':
             self.match('[')
-            self.nro()
-            self.match(']')
-            self.acessovarcontc()
-            return True
-        print("sintax error"); return False
+            if self.nro() and self.match(']'):
+                return self.acessovarcontc()
+        return False
         
 
     def acessovarcontc(self):
+        if self.lookahead['lexeme'] in [',', ')']:
+            return True
         if self.lookahead['lexeme'] == '[':
             self.match('[')
-            self.nro()
-            self.match(']')
-            return True
-        print("sintax error"); return False
+            return self.nro() and self.match(']')
+        return False
 
     def exparitmetica(self):
         if self.acessovar() or self.nro():
@@ -274,6 +272,8 @@ class SintaxAnalyzer:
         return False
 
     def varinit(self):
+        if self.lookahead['lexeme'] in [',', ';']:
+            return True
         if self.lookahead['lexeme'] == '=':
             self.match('=')
             return self.valor()
@@ -388,8 +388,7 @@ class SintaxAnalyzer:
         return False
 
     def varcont(self):
-        self.varinit()
-        return self.varfinal()
+        return self.varinit() and self.varfinal()
 
     def varfinal(self):
         if self.lookahead['lexeme'] == ',':
