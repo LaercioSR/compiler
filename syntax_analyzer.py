@@ -177,8 +177,7 @@ class SintaxAnalyzer:
     def se(self):
         if self.lookahead['lexeme'] == '(':
             self.match('(')
-            # if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
-            if self.bool() or self.acessovar():
+            if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
                 self.match(')')
                 self.match('{')
                 self.conteudo()
@@ -192,8 +191,7 @@ class SintaxAnalyzer:
             self.match('senao')
             if self.lookahead['lexeme'] == '(':
                 self.match('(')
-                # if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
-                if self.bool() or self.acessovar():
+                if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
                     self.match(')')
                     self.match('{')
                     self.conteudo()
@@ -202,7 +200,7 @@ class SintaxAnalyzer:
         return False
 
     def exparitmetica(self):
-        if self.acessovar() or self.nro():
+        if self.nro() or self.acessovar():
             return self.exparitmeticacont()
         elif self.lookahead['lexeme'] == '-':
             self.match('-')
@@ -406,8 +404,8 @@ class SintaxAnalyzer:
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'CAR':
             return self.match(self.lookahead['lexeme'])
-        elif self.nro() or self.bool() or self.acessovar() or self.exparitmetica():
-        # or self.exprelacional() or self.logica() or self.chamadafuncao():
+        elif self.nro() or self.bool() or self.acessovar() or self.exparitmetica() or self.exprelacional() or self.explogica():
+        # or self.chamadafuncao():
             return True
         return False
             
@@ -463,3 +461,100 @@ class SintaxAnalyzer:
             self.match('}')
             return result
         return False
+
+    def explogica(self):
+        if self.lookahead['lexeme'] == '(':
+            self.match('(')
+            if self.explogica() and self.match(')'):
+                return self.explogicacont()
+        elif self.lookahead['lexeme'] == '!':
+            self.match('!')
+            return self.explogicaexc()
+        elif self.acessovar():
+            return self.explogicacont()
+        elif self.bool():
+            return self.explogicacont()
+        elif self.exprelacional():
+            return self.explogicacont()
+        return False
+
+    def explogicaexc(self):
+        if self.lookahead['lexeme'] == '(':
+            self.match('(')
+            return self.paren()
+        elif self.bool():
+            return self.explogicacont()
+        elif self.acessovar():
+            return self.explogicacont()
+        return False
+
+    def paren(self):
+        if self.explogica():
+            if self.match(')'):
+                return self.explogicacont()
+        elif self.exprelacional():
+            if self.match(')'):
+                self.explogicacont()
+        return False
+    
+    def explogicacont(self):
+        if self.lookahead['lexeme'] == ')':
+            return True
+        if self.lookahead['type'] == 'LOG':
+            return self.explogica()
+        return False
+        
+    def exprelacional(self):
+        if self.lookahead['lexeme'] == '-':
+            self.match('-')
+            if self.negativo():
+                return self.exprelacionalcont()
+        elif self.lookahead['lexeme'] == '!':
+            self.match('!')
+            return self.exprelacionalexc()
+        elif self.lookahead['lexeme'] == '(':
+            self.match('(')
+            if self.exprelacional():
+                if self.match(')'):
+                    return self.exprelacionalrest()
+        elif self.acessovar():
+            return self.exprelacionalvar()
+        elif self.nro():
+            return self.exprelacionalcont()
+        elif self.bool():
+            return self.exprelacionalrest()
+        elif self.exparitmetica():
+            return self.exprelacionalcont()
+        elif self.explogica():
+            return self.exprelacionalrest()
+        return False
+
+    def exprelacionalvar(self):
+        return self.exprelacionalcont() or self.exprelacionalrest()
+
+    def exprelacionalexc(self):
+        if self.lookahead['lexeme'] == '(':
+            self.match('(')
+            if self.exprelacional() and self.match(')'):
+                return self.exprelacionalrest()
+        elif self.bool():
+            return self.exprelacionalrest()
+        return False
+
+    def exprelacionalcont(self):
+        if self.lookahead['type'] == 'REL':
+            self.match(self.lookahead['lexeme'])
+            return self.exprelacionalb()
+        return False
+
+    def exprelacionalrest(self):
+        if self.lookahead['lexeme'] in ['!=','==']:
+            self.match(self.lookahead['lexeme'])
+            return self.exprelacionalb()
+        return False
+
+    def exprelacionalb(self):
+        if self.lookahead['lexeme'] == '(':
+            if self.exprelacional():
+                return self.match(')')
+        return self.acessovar() or self.char() or self.nro() or self.exparitmetica()
