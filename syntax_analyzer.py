@@ -75,9 +75,8 @@ class SintaxAnalyzer:
             self.match('se')
             return self.se()
         elif self.lookahead['lexeme'] == 'enquanto':
-            #self.match('enquanto')
-            #return self.enquanto()
-            return True
+            self.match('enquanto')
+            return self.enquanto()
         elif self.lookahead['lexeme'] == 'escreva':
             self.match('escreva')
             return self.escreva()
@@ -85,9 +84,8 @@ class SintaxAnalyzer:
             self.match('leia')
             return self.leia()
         elif self.lookahead['lexeme'] == 'para':
-            #self.match('para')
-            #return self.para()
-            return True
+            self.match('para')
+            return self.para()
         elif self.lookahead['lexeme'] == 'registro':
             self.match('registro')
             return self.registro()
@@ -178,12 +176,8 @@ class SintaxAnalyzer:
         if self.lookahead['lexeme'] == '(':
             self.match('(')
             if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
-                self.match(')')
-                self.match('{')
-                self.conteudo()
-                self.match('}')
-                self.senao()
-                return True
+                if self.function_cont():
+                    return self.senao()
         return False
 
     def senao(self):
@@ -192,11 +186,7 @@ class SintaxAnalyzer:
             if self.lookahead['lexeme'] == '(':
                 self.match('(')
                 if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
-                    self.match(')')
-                    self.match('{')
-                    self.conteudo()
-                    self.match('}')
-                    return True
+                    return self.function_cont()
         return False
 
     def exparitmetica(self):
@@ -558,3 +548,48 @@ class SintaxAnalyzer:
             if self.exprelacional():
                 return self.match(')')
         return self.acessovar() or self.char() or self.nro() or self.exparitmetica()
+
+    def para(self):
+        if self.lookahead['lexeme'] == '(':
+            self.match('(')
+            if self.acessovar():
+                if self.match('='):
+                    if self.expatribuicao():
+                        if self.match(';'):
+                            return self.paracont()
+        return False
+
+    def paracont(self):
+        if self.explogica():
+            if self.match(';'):
+                return self.parafim()
+        elif self.exprelacional():
+            if self.match(';'):
+                return self.parafim()
+        elif self.ide():
+            if self.match(';'):
+                return self.parafim()
+        return False
+
+    def parafim(self):
+        if self.exprelacional():
+            return self.function_cont()
+        elif self.exparitmetica():
+            return self.function_cont()
+        return False
+    
+    def function_cont(self):
+        if self.match(')') and self.match('{'):
+            if self.conteudo():
+                return self.match('}')
+
+    def enquanto(self):
+        if self.explogica():
+            return self.function_cont()
+        elif self.exprelacional():
+            return self.function_cont()
+        elif self.bool():
+            return self.function_cont()
+        elif self.acessovar():
+            return self.function_cont()
+        return False
