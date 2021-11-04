@@ -73,9 +73,8 @@ class SintaxAnalyzer:
             self.match('constantes')
             return self.constantes()
         elif self.lookahead['lexeme'] == 'se':
-            #self.match('se')
-            #return self.se()
-            return True
+            self.match('se')
+            return self.se()
         elif self.lookahead['lexeme'] == 'enquanto':
             #self.match('enquanto')
             #return self.enquanto()
@@ -160,7 +159,6 @@ class SintaxAnalyzer:
             if self.nro() and self.match(']'):
                 return self.acessovarcontc()
         return False
-        
 
     def acessovarcontc(self):
         if self.lookahead['lexeme'] in [',', ')']:
@@ -168,6 +166,33 @@ class SintaxAnalyzer:
         if self.lookahead['lexeme'] == '[':
             self.match('[')
             return self.nro() and self.match(']')
+        return False
+
+    def se(self):
+        if self.lookahead['lexeme'] == '(':
+            self.match('(')
+            # if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
+            if self.bool() or self.acessovar():
+                self.match(')')
+                self.match('{')
+                self.conteudo()
+                self.match('}')
+                self.senao()
+                return True
+        return False
+
+    def senao(self):
+        if self.lookahead['lexeme'] == 'senao':
+            self.match('senao')
+            if self.lookahead['lexeme'] == '(':
+                self.match('(')
+                # if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
+                if self.bool() or self.acessovar():
+                    self.match(')')
+                    self.match('{')
+                    self.conteudo()
+                    self.match('}')
+                    return True
         return False
 
     def exparitmetica(self):
@@ -183,7 +208,7 @@ class SintaxAnalyzer:
         return False
 
     def exparitmeticaparen(self):
-        if self.exparitmetica() or  self.acessovar() or self.nro():
+        if self.exparitmetica() or self.acessovar() or self.nro():
             self.match(')')
             return self.exparitmeticacontb()
         return False
@@ -200,9 +225,40 @@ class SintaxAnalyzer:
             return self.exparitmeticab()
         elif self.lookahead['lexeme'] == '/':
             self.match('/')
-            return self.exparitmeticazero()
-        elif self.exparitmeticacontincr():
-            return True
+            return self.exparitmeticab()
+        return False
+
+    def exparitmeticab(self):
+        if self.acessovar() or self.nro():
+            return self.exparitmeticacontb()
+        elif self.lookahead['lexeme'] == '-':
+            self.match('-')
+            self.negativo()
+            return self.exparitmeticacontb()
+        elif self.lookahead['lexeme'] == '(':
+            self.match('(')
+            return self.exparitmeticabparen()
+        return False
+
+    def exparitmeticabparen(self):
+        if self.exparitmetica() or self.acessovar() or self.nro():
+            self.match(')')
+            return self.exparitmeticacontb()
+        return False
+
+    def exparitmeticacontb(self):
+        if self.lookahead['lexeme'] == '+':
+            self.match('+')
+            return self.exparitmeticab()
+        elif self.lookahead['lexeme'] == '-':
+            self.match('-')
+            return self.exparitmeticab()
+        elif self.lookahead['lexeme'] == '*':
+            self.match('*')
+            return self.exparitmeticab()
+        elif self.lookahead['lexeme'] == '/':
+            self.match('/')
+            return self.exparitmeticab()
         return False
 
     def cadeia(self):
