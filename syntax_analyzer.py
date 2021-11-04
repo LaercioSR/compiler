@@ -91,6 +91,13 @@ class SintaxAnalyzer:
         elif self.lookahead['lexeme'] == 'registro':
             self.match('registro')
             return self.registro()
+        elif self.acessovar():
+            if self.lookahead['lexeme'] == '=':
+                self.match('=')
+                if self.expatribuicao():
+                    return self.conteudo()
+        elif self.lookahead['lexeme'] == 'retorno':
+            #return self.retorno()
             return True
         return False
 
@@ -139,7 +146,7 @@ class SintaxAnalyzer:
         return self.ide() and self.acessovarcont()
 
     def acessovarcont(self):
-        if self.lookahead['lexeme'] in [',', ')']:
+        if self.lookahead['lexeme'] in ['=',',',')']:
             return True
         if self.lookahead['lexeme'] == '.':
             self.match('.')
@@ -208,22 +215,13 @@ class SintaxAnalyzer:
 
     def exparitmeticaparen(self):
         if self.exparitmetica() or self.acessovar() or self.nro():
-            self.match(')')
-            return self.exparitmeticacontb()
+            if self.match(')'):
+                return self.exparitmeticacontb()
         return False
 
     def exparitmeticacont(self):
-        if self.lookahead['lexeme'] == '+':
-            self.match('+')
-            return self.exparitmeticab()
-        elif self.lookahead['lexeme'] == '-':
-            self.match('-')
-            return self.exparitmeticab()
-        elif self.lookahead['lexeme'] == '*':
-            self.match('*')
-            return self.exparitmeticab()
-        elif self.lookahead['lexeme'] == '/':
-            self.match('/')
+        if self.lookahead['type'] == 'ART':
+            self.match(self.lookahead['lexeme'])
             return self.exparitmeticab()
         return False
 
@@ -232,8 +230,8 @@ class SintaxAnalyzer:
             return self.exparitmeticacontb()
         elif self.lookahead['lexeme'] == '-':
             self.match('-')
-            self.negativo()
-            return self.exparitmeticacontb()
+            if self.negativo():
+                return self.exparitmeticacontb()
         elif self.lookahead['lexeme'] == '(':
             self.match('(')
             return self.exparitmeticabparen()
@@ -241,24 +239,20 @@ class SintaxAnalyzer:
 
     def exparitmeticabparen(self):
         if self.exparitmetica() or self.acessovar() or self.nro():
-            self.match(')')
-            return self.exparitmeticacontb()
+            if self.match(')'):
+                return self.exparitmeticacontb()
         return False
 
     def exparitmeticacontb(self):
-        if self.lookahead['lexeme'] == '+':
-            self.match('+')
-            return self.exparitmeticab()
-        elif self.lookahead['lexeme'] == '-':
-            self.match('-')
-            return self.exparitmeticab()
-        elif self.lookahead['lexeme'] == '*':
-            self.match('*')
-            return self.exparitmeticab()
-        elif self.lookahead['lexeme'] == '/':
-            self.match('/')
+        if self.lookahead['lexeme'] in [')', ';']:
+            return True
+        if self.lookahead['type'] == 'ART':
+            self.match(self.lookahead['lexeme'])
             return self.exparitmeticab()
         return False
+
+    def expatribuicao(self):        
+        return self.valor() and self.match(';')
 
     def cadeia(self):
         if self.lookahead['type'] == 'CAD':
@@ -412,8 +406,8 @@ class SintaxAnalyzer:
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'CAR':
             return self.match(self.lookahead['lexeme'])
-        elif self.nro() or self.bool() or self.acessovar():
-        # or self.exparitmetica() or self.exprelacional() or self.logica() or self.chamadafuncao():
+        elif self.nro() or self.bool() or self.acessovar() or self.exparitmetica():
+        # or self.exprelacional() or self.logica() or self.chamadafuncao():
             return True
         return False
             
@@ -469,4 +463,3 @@ class SintaxAnalyzer:
             self.match('}')
             return result
         return False
-
