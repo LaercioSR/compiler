@@ -43,9 +43,8 @@ class SintaxAnalyzer:
             self.match('constantes')
             ans = self.constantes()
         elif self.lookahead['lexeme'] == 'registro':
-            #self.match('registro')
-            #ans = self.registro()
-            ans = True
+            self.match('registro')
+            ans = self.registro()
         if ans:
             return True
         # print("sintax error linha: ", self.lookahead['line']); return False
@@ -90,8 +89,8 @@ class SintaxAnalyzer:
             #return self.para()
             return True
         elif self.lookahead['lexeme'] == 'registro':
-            #self.match('registro')
-            #return self.registro()
+            self.match('registro')
+            return self.registro()
             return True
         return False
 
@@ -462,4 +461,12 @@ class SintaxAnalyzer:
         if self.lookahead['lexeme'] == '}':
             return self.match('}')
         return self.var()
-    
+
+    def registro(self):
+        if self.ide():
+            self.match('{')
+            result = self.var()
+            self.match('}')
+            return result
+        return False
+
