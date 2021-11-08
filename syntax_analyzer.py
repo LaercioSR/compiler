@@ -11,7 +11,7 @@ class SintaxAnalyzer:
 
     def run(self):
         ans = self.start()
-        #print(self.symbol_table)
+        # print(self.symbol_table)
         return ans
 
     def match(self, t):
@@ -776,10 +776,12 @@ class SintaxAnalyzer:
 
     def funcao(self):
         if self.lookahead['lexeme'] == 'vazio':
+            self.match('vazio')
             if self.tipocont():
                 if self.ide():
                     return self.funcaoinit()
         elif self.tipo():
+            self.match(self.tipo())
             if self.tipocont():
                 if self.ide():
                     return self.funcaoinit()
@@ -788,7 +790,7 @@ class SintaxAnalyzer:
     def funcaoinit(self):
         if self.lookahead['lexeme'] == '(':
             self.match('(')
-            self.current_scope = "FUNC_"+upper(self.last_ide)
+            self.current_scope = "FUNC_"+self.last_ide
             if self.paraninit():
                 if self.match('{'):
                     if self.conteudo():
