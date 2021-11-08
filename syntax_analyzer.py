@@ -92,15 +92,14 @@ class SintaxAnalyzer:
         elif self.lookahead['lexeme'] == 'registro':
             self.match('registro')
             return self.registro()
+        elif self.lookahead['lexeme'] == 'retorno':
+            self.match('retorno')
+            return self.retorno()
         elif self.acessovar():
             if self.lookahead['lexeme'] == '=':
                 self.match('=')
                 if self.expatribuicao():
                     return self.match(';')
-                    #return self.conteudo()
-        elif self.lookahead['lexeme'] == 'retorno':
-            #return self.retorno()
-            return True
         return False
 
     def escreva(self):
@@ -693,6 +692,58 @@ class SintaxAnalyzer:
 ##############COMMIT FUNCAO##############
 
     def funcao(self):
+        if self.lookahead['lexeme'] == 'vazio':
+            if self.tipocont():
+                if self.ide():
+                    return self.funcaoinit()
+        elif self.tipo():
+            if self.tipocont():
+                if self.ide():
+                    return self.funcaoinit()
+        return False
+
+    def funcaoinit(self):
+        if self.lookahead['lexeme'] == '(':
+            self.match('(')
+            if self.paraninit():
+                if self.match('{'):
+                    if self.conteudo():
+                        return self.match('}')
+
+    def tipocont(self):
+        if self.lookahead['lexeme'] == '[':
+            self.match('[')
+            if self.match(']'):
+                return self.vetormais()
+        return True
+
+    def vetormais(self):
+        if self.lookahead['lexeme'] == '[':
+            self.match('[')
+            if self.match(']'):
+                return self.vetormaisum()
+        return True
+
+    def vetormaisum(self):
+        if self.lookahead['lexeme'] == '[':
+            self.match('[')
+            return self.match(']')
+        return True
+
+    def paraninit(self):
+        if self.tipo():
+            if self.ide():
+                return self.paraninitcont()
+        return False
+
+    def paraninitcont(self):
+        if self.lookahead['lexeme'] == ',':
+            return self.paraninit()
+        return self.match(')')
+
+    def retorno(self):
+        if self.valor():
+            return self.match(';')
         return False
 
     def chamadafuncao(self):
