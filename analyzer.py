@@ -24,7 +24,7 @@ def main():
 
         # execução do analisador sintatico
         print(f'\nentrada{index}.txt')
-        ans = SintaxAnalyzer(tokens).start()
+        ans = SintaxAnalyzer(tokens).run()
         print(f'resultado analise sintatica: {ans}')
         index = index+1
 

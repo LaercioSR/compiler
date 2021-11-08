@@ -3,6 +3,13 @@ class SintaxAnalyzer:
         self.input = input 
         self.lookahead = input[0]
         self.i = 0
+        self.symbol_table = []
+        self.last_ide = None
+
+    def run(self):
+        ans = self.start()
+        print(self.symbol_table)
+        return ans
 
     def match(self, t):
         # print(f"{self.lookahead} == {t} : {t == self.lookahead['lexeme']}")
@@ -20,6 +27,10 @@ class SintaxAnalyzer:
     def follow(self, k=1):
         return self.input[self.i+k]
 
+    def save_symbol(self, category):
+        symbol = { "lexeme": self.last_ide, "category": category }
+        self.symbol_table.append(symbol)
+
     def error(self):
         sync_tokens = [';']
         print("sintax error linha: ", self.lookahead)
@@ -36,22 +47,74 @@ class SintaxAnalyzer:
             self.match('algoritmo')
             ans = self.algoritmo()
         elif self.lookahead['lexeme'] == 'funcao':
-            #self.match('funcao')
-            #ans = self.funcao()
-            ans = True
+            # self.match('funcao')
+            # ans = self.funcao()
+            # ans = True
+            ans = self.start()
         elif self.lookahead['lexeme'] == 'variaveis':
             self.match('variaveis')
-            ans = self.variaveis()
+            ans = self.variaveis() and self.a()
         elif self.lookahead['lexeme'] == 'constantes':
             self.match('constantes')
-            ans = self.constantes()
+            ans = self.constantes() and self.b()
         elif self.lookahead['lexeme'] == 'registro':
             self.match('registro')
-            ans = self.registro()
-        if ans:
-            return True
+            ans = self.registro() and self.start()
+        # if ans:
+        #     return True
         # print("sintax error linha: ", self.lookahead['line']); return False
-        return False
+        return ans
+
+    def a(self):
+        ans = False
+        if self.lookahead['lexeme'] == 'algoritmo':
+            self.match('algoritmo')
+            ans = self.algoritmo()
+        elif self.lookahead['lexeme'] == 'funcao':
+            # self.match('funcao')
+            # ans = self.funcao()
+            # ans = True
+            ans = self.a()
+        elif self.lookahead['lexeme'] == 'constantes':
+            self.match('constantes')
+            ans = self.constantes() and self.c()
+        elif self.lookahead['lexeme'] == 'registro':
+            self.match('registro')
+            ans = self.registro() and self.a()
+        return ans
+
+    def b(self):
+        ans = False
+        if self.lookahead['lexeme'] == 'algoritmo':
+            self.match('algoritmo')
+            ans = self.algoritmo()
+        elif self.lookahead['lexeme'] == 'funcao':
+            # self.match('funcao')
+            # ans = self.funcao()
+            # ans = True
+            ans = self.b()
+        elif self.lookahead['lexeme'] == 'variaveis':
+            self.match('variaveis')
+            ans = self.variaveis() and self.c()
+        elif self.lookahead['lexeme'] == 'registro':
+            self.match('registro')
+            ans = self.registro() and self.b()
+        return ans
+
+    def c(self):
+        ans = False
+        if self.lookahead['lexeme'] == 'algoritmo':
+            self.match('algoritmo')
+            ans = self.algoritmo()
+        elif self.lookahead['lexeme'] == 'funcao':
+            # self.match('funcao')
+            # ans = self.funcao()
+            # ans = True
+            ans = self.c()
+        elif self.lookahead['lexeme'] == 'registro':
+            self.match('registro')
+            ans = self.registro() and self.c()
+        return ans
 
     def algoritmo(self):
         if self.lookahead['lexeme'] == '{':
@@ -303,6 +366,7 @@ class SintaxAnalyzer:
 
     def ide(self):
         if self.lookahead['type'] == 'IDE':
+            self.last_ide = self.lookahead['lexeme']
             self.match(self.lookahead['lexeme'])
             return True
         return False
@@ -356,6 +420,7 @@ class SintaxAnalyzer:
 
     def constalt(self):
         if self.ide():
+            self.save_symbol("CONST")
             if self.varinit():
                 return self.constcont()
         return False
@@ -504,12 +569,14 @@ class SintaxAnalyzer:
         ans=False
         if self.tipo():
             if self.ide():
+                self.save_symbol("VAR")
                 if self.varcont():
                     ans = True
         return ans
 
     def varalt(self):
         if self.ide():
+            self.save_symbol("VAR")
             return self.varcont()        
         return False
 
