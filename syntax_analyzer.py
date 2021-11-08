@@ -10,12 +10,15 @@ class SintaxAnalyzer:
             self.lookahead = self.next_terminal()
             return True
         else:
-            print(self.lookahead['lexeme'], t, " sintax error match")
+            print(f"Expected: {t} Found: {self.lookahead['lexeme']} sintax error match")
             return False
 
     def next_terminal(self):
         if(self.i < len(self.input)-1): self.i = self.i+1
         return self.input[self.i]
+
+    def follow(self, k=1):
+        return self.input[self.i+k]
 
     def error(self):
         sync_tokens = [';']
@@ -144,8 +147,6 @@ class SintaxAnalyzer:
         return self.ide() and self.acessovarcont()
 
     def acessovarcont(self):
-        if self.lookahead['lexeme'] in ['=',',',')']:
-            return True
         if self.lookahead['lexeme'] == '.':
             self.match('.')
             return self.acessovar()
@@ -153,7 +154,7 @@ class SintaxAnalyzer:
             self.match('[')
             if self.nro() and self.match(']'):
                 return self.acessovarcontb()
-        return False
+        return True
 
     def acessovarcontb(self):
         if self.lookahead['lexeme'] in [',', ')']:
@@ -175,7 +176,13 @@ class SintaxAnalyzer:
     def se(self):
         if self.lookahead['lexeme'] == '(':
             self.match('(')
-            if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
+            if self.expressao():
+                if self.function_cont():
+                    return self.senao()
+            elif self.bool():
+                if self.function_cont():
+                    return self.senao()
+            elif self.acessovar():
                 if self.function_cont():
                     return self.senao()
         return False
@@ -185,24 +192,30 @@ class SintaxAnalyzer:
             self.match('senao')
             if self.lookahead['lexeme'] == '(':
                 self.match('(')
-                if self.explogica() or self.exprelacional() or self.bool() or self.acessovar():
+                if self.expressao(): 
+                    return self.function_cont()
+                elif self.bool():
+                    return self.function_cont()
+                elif self.acessovar():
                     return self.function_cont()
         return False
 
     def exparitmetica(self):
-        if self.nro() or self.acessovar():
+        if self.nro():
+            return self.exparitmeticacont()
+        if self.acessovar():
             return self.exparitmeticacont()
         elif self.lookahead['lexeme'] == '-':
             self.match('-')
-            self.negativo()
-            return self.exparitmeticacont()
+            if self.negativo():
+                return self.exparitmeticacont()
         elif self.lookahead['lexeme'] == '(':
             self.match('(')
             return self.exparitmeticaparen()
         return False
 
     def exparitmeticaparen(self):
-        if self.exparitmetica() or self.acessovar() or self.nro():
+        if self.exparitmetica():
             if self.match(')'):
                 return self.exparitmeticacontb()
         return False
@@ -226,22 +239,38 @@ class SintaxAnalyzer:
         return False
 
     def exparitmeticabparen(self):
-        if self.exparitmetica() or self.acessovar() or self.nro():
+        if self.exparitmetica():
             if self.match(')'):
                 return self.exparitmeticacontb()
         return False
 
     def exparitmeticacontb(self):
-        if self.lookahead['lexeme'] in [')', ';']:
-            return True
         if self.lookahead['type'] == 'ART':
             self.match(self.lookahead['lexeme'])
             return self.exparitmeticab()
+        return True
+
+    def expatribuicao(self):
+        if self.lookahead['lexeme'] in ['++','--']:
+            self.match(self.lookahead['lexeme'])
+            if self.lookahead['type'] == 'NRO':
+                self.nro()
+                return self.match(';')
+            elif self.lookahead['type'] == 'IDE':
+                self.acessovar()
+                return self.match(';')
+        elif self.lookahead['type'] in ['IDE', 'NRO']:
+            self.valor()
+            self.expatribuicaocont()     
+            return self.match(';')
+        elif self.valor():
+            return self.match(';')
         return False
-
-    def expatribuicao(self):        
-        return self.valor() and self.match(';')
-
+        
+    def expatribuicaocont(self):
+        if self.lookahead['lexeme'] in ['++','--']:
+            self.match(self.lookahead['lexeme'])
+        
     def cadeia(self):
         if self.lookahead['type'] == 'CAD':
             self.match(self.lookahead['lexeme'])
@@ -264,17 +293,19 @@ class SintaxAnalyzer:
         if self.lookahead['type'] == 'NRO':
             self.match(self.lookahead['lexeme'])
             return True
-        print("sintax error"); return False
+        return False
 
     def simbolo(self):
         if self.lookahead['type'] == 'SIB':
             self.match(self.lookahead['lexeme'])
             return True
-        print("sintax error"); return False
+        return False
 
     def negativo(self):
-        if self.nro() or self.acessovar():
-            return True
+        if self.lookahead['type'] == 'NRO':
+            return self.nro()
+        if self.lookahead['type'] == 'IDE':
+            return self.acessovar()
         return False
 
     def constantes(self):
@@ -312,7 +343,7 @@ class SintaxAnalyzer:
         return False
 
     def varinit(self):
-        if self.lookahead['lexeme'] in [',', ';']:
+        if self.lookahead['lexeme'] in [',',';']:
             return True
         if self.lookahead['lexeme'] == '=':
             self.match('=')
@@ -337,26 +368,21 @@ class SintaxAnalyzer:
         return False
 
     def varinitcontmatr(self):
-        ans = False
         if self.lookahead['lexeme'] == '{':
             self.match('{')
             if self.vetor():
-                ans = self.match(',') and self.match('{')
-                ans = ans and self.vetor()
+                if self.match(',') and self.match('{'):
+                    return self.vetor()
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
             if self.nro():
                 ans = self.match(']') and self.match('=') and self.match('{')
                 if ans and self.vetor():
-                    ans = self.match(',')
-                    self.match('{')
-                    if ans and self.vetor():
-                        ans = self.match(',') and self.match('{')
-                        ans = ans and self.vetor()
-                    else: ans = False
-                else: ans = False
-            else: ans = False
-        return ans
+                    if self.match(',') and self.match('{'):
+                        if self.vetor():
+                            if self.match(',') and self.match('{'):
+                                return self.vetor()
+        return False
             
     def vetor(self):
         if self.valor():
@@ -388,15 +414,57 @@ class SintaxAnalyzer:
 
     def valor(self):
         if self.lookahead['lexeme'] == '-':
-            self.match('-')
-            return self.negativo()
+            follow = self.follow(2)
+            if follow['type'] in ['REL', 'LOG']:
+                return self.expressao()
+            elif follow['type'] == 'ART':
+                return self.exparitmetica()
+            else:
+                self.match('-')
+                return self.negativo()
+        elif self.lookahead['lexeme'] == '(':
+            follow = self.follow()       
+            i=2
+            rel_log = art = False
+            while follow['lexeme'] not in [';','}']:
+                follow = self.follow(i)      
+                if follow['type'] in ['REL','LOG']:
+                    rel_log=True
+                elif follow['type'] == 'ART':
+                    art=True 
+                i += 1
+            if rel_log:
+                return self.expressao()
+            elif art:
+                return self.exparitmetica()
         elif self.lookahead['type'] == 'CAD':
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'CAR':
             return self.match(self.lookahead['lexeme'])
-        elif self.nro() or self.bool() or self.acessovar() or self.exparitmetica() or self.exprelacional() or self.explogica():
-        # or self.chamadafuncao():
-            return True
+        elif self.lookahead['type'] == 'NRO':
+            follow = self.follow()
+            if follow['type'] in ['REL', 'LOG']:
+                return self.expressao()
+            elif follow['type'] == 'ART':
+                return self.exparitmetica()
+            else:
+                return self.nro()
+        elif self.lookahead['lexeme'] in ['verdadeiro','falso']:
+            follow = self.follow()
+            if follow['type'] in ['REL', 'LOG']:
+                return self.expressao()
+            else:
+                return self.bool()
+        elif self.lookahead['type'] == 'IDE':
+            follow = self.follow()
+            if follow['type'] in ['REL', 'LOG']:
+                return self.expressao()
+            elif follow['type'] == 'ART':
+                return self.exparitmetica()
+            else:
+                return self.acessovar()
+        #elif self.chamadafuncao():
+        #    return True
         return False
             
     def bool(self):
@@ -446,109 +514,97 @@ class SintaxAnalyzer:
 
     def registro(self):
         if self.ide():
-            self.match('{')
-            result = self.var()
-            self.match('}')
-            return result
+            if self.match('{'):
+                return self.var()
         return False
 
-    def explogica(self):
+    def expressao(self):
         if self.lookahead['lexeme'] == '(':
             self.match('(')
-            if self.explogica() and self.match(')'):
-                return self.explogicacont()
+            follow = self.follow()       
+            i=1
+            rel_log = art = False
+            while follow['lexeme'] not in [';','}']:
+                follow = self.follow(i)      
+                if follow['type'] in ['REL','LOG']:
+                    rel_log=True
+                elif follow['type'] == 'ART':
+                    art=True 
+                i += 1
+            if art:
+                if self.exparitmetica():
+                    if self.match(')'):
+                        return self.expressaocont()
+            elif rel_log:
+                if self.expressao():
+                    if self.match(')'):
+                        return self.expressaocont()
         elif self.lookahead['lexeme'] == '!':
             self.match('!')
-            return self.explogicaexc()
-        elif self.acessovar():
-            return self.explogicacont()
+            return self.expressaob()
+        elif self.lookahead['lexeme'] == '-':
+            follow = self.follow(2)
+            if follow['type'] == 'ART':
+                if self.exparitmetica():
+                    return self.expressaocont()
+            else:
+                self.match('-')
+                if self.negativo():
+                    return self.expressaocont()
+        elif self.lookahead['type'] == 'NRO':
+            follow = self.follow()
+            if follow['type'] == 'ART':
+                if self.exparitmetica():
+                    return self.expressaocont()
+            else:
+                self.nro()
+                return self.expressaocont()
+        elif self.lookahead['type'] == 'IDE':
+            follow = self.follow()
+            if follow['type'] == 'ART':
+                if self.exparitmetica():
+                    return self.expressaocont()
+            else:
+                #print("exp: ", self.lookahead)
+                if self.acessovar():
+                    
+                    return self.expressaocont()
         elif self.bool():
-            return self.explogicacont()
-        elif self.exprelacional():
-            return self.explogicacont()
+            return self.expressaocont()
+        elif self.char():
+            return self.expressaocont()
+        elif self.cadeia():
+            return self.expressaocont()
         return False
 
-    def explogicaexc(self):
+    def expressaob(self):
         if self.lookahead['lexeme'] == '(':
             self.match('(')
-            return self.paren()
-        elif self.bool():
-            return self.explogicacont()
-        elif self.acessovar():
-            return self.explogicacont()
-        return False
-
-    def paren(self):
-        if self.explogica():
-            if self.match(')'):
-                return self.explogicacont()
-        elif self.exprelacional():
-            if self.match(')'):
-                self.explogicacont()
-        return False
-    
-    def explogicacont(self):
-        if self.lookahead['lexeme'] == ')':
-            return True
-        if self.lookahead['type'] == 'LOG':
-            return self.explogica()
-        return False
-        
-    def exprelacional(self):
-        if self.lookahead['lexeme'] == '-':
-            self.match('-')
-            if self.negativo():
-                return self.exprelacionalcont()
-        elif self.lookahead['lexeme'] == '!':
-            self.match('!')
-            return self.exprelacionalexc()
-        elif self.lookahead['lexeme'] == '(':
-            self.match('(')
-            if self.exprelacional():
+            follow = self.follow()                
+            if follow['type'] == 'ART':
+                if self.exparitmetica():
+                    return self.expressaocont()
+            elif self.expressao():
                 if self.match(')'):
-                    return self.exprelacionalrest()
-        elif self.acessovar():
-            return self.exprelacionalvar()
-        elif self.nro():
-            return self.exprelacionalcont()
+                    return self.expressaocont()
+        elif self.lookahead['type'] == 'IDE':
+            follow = self.follow()
+            if follow['type'] == 'ART':
+                if self.exparitmetica():
+                    return self.expressaocont()
+            else:
+                if self.acessovar():
+                    return self.expressaocont()
         elif self.bool():
-            return self.exprelacionalrest()
-        elif self.exparitmetica():
-            return self.exprelacionalcont()
-        elif self.explogica():
-            return self.exprelacionalrest()
+            return self.expressaocont()
         return False
 
-    def exprelacionalvar(self):
-        return self.exprelacionalcont() or self.exprelacionalrest()
-
-    def exprelacionalexc(self):
-        if self.lookahead['lexeme'] == '(':
-            self.match('(')
-            if self.exprelacional() and self.match(')'):
-                return self.exprelacionalrest()
-        elif self.bool():
-            return self.exprelacionalrest()
-        return False
-
-    def exprelacionalcont(self):
-        if self.lookahead['type'] == 'REL':
+    def expressaocont(self):
+        if self.lookahead['type'] in ['REL', 'LOG']:
             self.match(self.lookahead['lexeme'])
-            return self.exprelacionalb()
-        return False
-
-    def exprelacionalrest(self):
-        if self.lookahead['lexeme'] in ['!=','==']:
-            self.match(self.lookahead['lexeme'])
-            return self.exprelacionalb()
-        return False
-
-    def exprelacionalb(self):
-        if self.lookahead['lexeme'] == '(':
-            if self.exprelacional():
-                return self.match(')')
-        return self.acessovar() or self.char() or self.nro() or self.exparitmetica()
-
+            return self.expressao()
+        return True
+    
     def para(self):
         if self.lookahead['lexeme'] == '(':
             self.match('(')
@@ -560,10 +616,7 @@ class SintaxAnalyzer:
         return False
 
     def paracont(self):
-        if self.explogica():
-            if self.match(';'):
-                return self.parafim()
-        elif self.exprelacional():
+        if self.expressao():
             if self.match(';'):
                 return self.parafim()
         elif self.ide():
@@ -572,7 +625,7 @@ class SintaxAnalyzer:
         return False
 
     def parafim(self):
-        if self.exprelacional():
+        if self.expressao():
             return self.function_cont()
         elif self.exparitmetica():
             return self.function_cont()
@@ -584,12 +637,38 @@ class SintaxAnalyzer:
                 return self.match('}')
 
     def enquanto(self):
-        if self.explogica():
-            return self.function_cont()
-        elif self.exprelacional():
+        if self.expressao():
             return self.function_cont()
         elif self.bool():
             return self.function_cont()
         elif self.acessovar():
             return self.function_cont()
         return False
+
+##############COMMIT FUNCAO##############
+
+    def funcao(self):
+        return False
+
+    def chamadafuncao(self):
+        if self.lookahead['lexeme'] == '(':
+            self.match('(')
+            return self.paran()
+        return False
+    
+    def paran(self):
+        if self.lookahead['lexeme'] == ')':
+            return self.match(')')
+        return self.parancont()
+
+    def parancont(self):
+        if self.valor():
+            return self.paranfim()
+        return False
+
+    def paranfim(self):
+        if self.lookahead['lexeme'] == ',':
+            self.match(',')
+            return self.parancont()
+        elif self.lookahead['lexeme'] == ')':
+            return self.match(')')
