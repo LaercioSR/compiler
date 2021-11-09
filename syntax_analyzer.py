@@ -14,9 +14,6 @@ class SintaxAnalyzer:
         #ans = self.start()
         #print(self.symbol_table)
         ans = self.start()
-        if ans:
-            self.output.write("Sucesso!\n") 
-            self.output.close()
         return ans
 
     def match(self, t):

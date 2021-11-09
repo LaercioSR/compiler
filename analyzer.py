@@ -19,11 +19,15 @@ def main():
     folder_in = os.getcwd() + '/input/'
     while os.path.isfile(folder_in + f'entrada{index}.txt'):
         #sub-rotina lexico
-        tokens = la.scanner(folder_in, folder_out, index)
+        tokens, success = la.scanner(folder_in, folder_out, index)
 
         # execução do analisador sintatico
         print(f'\nentrada{index}.txt')
-        SintaxAnalyzer(tokens, folder_out + f'saida{index}.txt').run()
+        output = folder_out + f'saida{index}.txt'
+        ans = SintaxAnalyzer(tokens, output).run()
+        if ans and success:
+            output.write("Sucesso!\n") 
+            output.close()
         index = index+1
 
 

@@ -207,4 +207,4 @@ def scanner(folder_in, folder_out, index) -> list:
         output.write(f"{error['line']} {type[error['state']]} {error['lexeme']}\n") 
    
     input.close()
-    return tokens
+    return tokens, (len(errors) == 0)
