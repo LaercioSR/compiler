@@ -161,9 +161,6 @@ def scanner(folder_in, folder_out, index) -> list:
             column = getColumn(char)
             previous_state = state
             state = matrix[previous_state][column]
-            if(state in [26, 27, 28]):
-                print(f"char: {char}, lexeme: {lexeme}, column: {column}, previous_state: {previous_state}, state: {state}")
-                print("----------------------------------\n")
             
             if state in final_states:
                 if previous_state in retroactive_states:
