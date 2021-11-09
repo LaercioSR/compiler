@@ -11,8 +11,6 @@ class SintaxAnalyzer:
         self.output = open(output_file, 'a')
 
     def run(self):
-        #ans = self.start()
-        #print(self.symbol_table)
         ans = self.start()
         return ans
 
@@ -22,7 +20,6 @@ class SintaxAnalyzer:
             self.lookahead = self.next_terminal()
             return True
         else:
-            #print(f"Expected: {t} Found: {self.lookahead['lexeme']} sintax error match")
             return False
 
     def next_terminal(self):
@@ -347,17 +344,14 @@ class SintaxAnalyzer:
             self.match(self.lookahead['lexeme'])
             if self.lookahead['type'] == 'NRO':
                 return self.nro()
-                #return self.match(';')
             elif self.lookahead['type'] == 'IDE':
                 return self.acessovar()
-                #return self.match(';')
         elif self.lookahead['type'] in ['IDE', 'NRO']:
-            self.valor()
-            return self.expatribuicaocont()     
-            #return self.match(';')
+            # self.valor()
+            if self.valor():
+                return self.expatribuicaocont() 
+            return False
         return self.valor()
-            #return self.match(';')
-        #return False
         
     def expatribuicaocont(self):
         if self.lookahead['lexeme'] in ['++','--']:
