@@ -4,6 +4,8 @@ class SintaxAnalyzer:
         self.lookahead = input[0]
         self.i = 0
         self.symbol_table = []
+        self.current_scope = "GLOBAL"
+        self.last_ide = None
         self.last_ide = None
         self.expected = None
         self.output = open(output_file, 'a')
@@ -34,7 +36,12 @@ class SintaxAnalyzer:
         return self.input[self.i+k]
 
     def save_symbol(self, category):
-        symbol = { "lexeme": self.last_ide, "category": category }
+        symbol = { 
+            "lexeme": self.last_ide, 
+            "category": category,
+            "type": self.last_type,
+            "scope": self.current_scope
+        }
         self.symbol_table.append(symbol)
 
     def error(self):
@@ -118,6 +125,7 @@ class SintaxAnalyzer:
         return ans
 
     def algoritmo(self):
+        self.current_scope = "ALGORITHM"
         if self.lookahead['lexeme'] == '{':
             self.match('{')
             ans=True
@@ -410,16 +418,22 @@ class SintaxAnalyzer:
 
     def tipo(self):
         if self.lookahead['lexeme'] == 'inteiro':
+            self.last_type = 'inteiro'
             self.match('inteiro')
         elif self.lookahead['lexeme'] == 'real':
+            self.last_type = 'real'
             self.match('real')
         elif self.lookahead['lexeme'] == 'booleano':
+            self.last_type = 'booleano'
             self.match('booleano')
         elif self.lookahead['lexeme'] == 'cadeia':
+            self.last_type = 'cadeia'
             self.match('cadeia')
         elif self.lookahead['lexeme'] == 'char':
+            self.last_type = 'char'
             self.match('char')
         elif self.lookahead['lexeme'] == 'registro':
+            self.last_type = 'registro'
             self.match('registro')
         else:
             return False
@@ -769,6 +783,7 @@ class SintaxAnalyzer:
                 if self.ide():
                     return self.funcaoinit()
         elif self.tipo():
+            self.match(self.tipo())
             if self.tipocont():
                 if self.ide():
                     return self.funcaoinit()
@@ -777,6 +792,7 @@ class SintaxAnalyzer:
     def funcaoinit(self):
         if self.lookahead['lexeme'] == '(':
             self.match('(')
+            self.current_scope = "FUNC_"+self.last_ide
             if self.paraninit():
                 if self.match('{'):
                     ans=True
@@ -785,6 +801,8 @@ class SintaxAnalyzer:
                         if not result:
                             self.error()
                             ans = result
+                        else:
+                            self.current_scope = "GLOBAL"
                     return ans and self.match('}')
         return False
 
