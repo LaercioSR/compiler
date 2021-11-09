@@ -1,20 +1,24 @@
 class SintaxAnalyzer:
-    def __init__(self, input):
+    def __init__(self, input,output_file):
         self.input = input 
         self.lookahead = input[0]
         self.i = 0
         self.symbol_table = []
         self.last_ide = None
         self.expected = None
+        self.output = open(output_file, 'a')
 
     def run(self):
-        ans = self.start()
+        #ans = self.start()
         #print(self.symbol_table)
+        ans = self.start()
+        if ans:
+            self.output.write("Sucesso!\n") 
+            self.output.close()
         return ans
 
     def match(self, t):
         self.expected = t
-        # print(f"{self.lookahead} == {t} : {t == self.lookahead['lexeme']}")
         if t == self.lookahead['lexeme']:
             self.lookahead = self.next_terminal()
             return True
@@ -35,8 +39,7 @@ class SintaxAnalyzer:
 
     def error(self):
         sync_tokens = [';']
-        #print("sintax error linha: ", self.lookahead)
-        print(f"Syntax Error: Expected: '{self.expected}' Found: '{self.lookahead['lexeme']}', linha: {self.lookahead['line']}\n")
+        self.output.write(f"Syntax Error: Found: '{self.lookahead['lexeme']}', line: {self.lookahead['line']}\n") 
 
         while(self.lookahead['lexeme'] not in sync_tokens):
             self.lookahead = self.next_terminal()
@@ -61,10 +64,9 @@ class SintaxAnalyzer:
             ans = self.constantes() and self.b()
         elif self.lookahead['lexeme'] == 'registro':
             self.match('registro')
-            ans = self.registro() and self.start()
-        # print("sintax error linha: ", self.lookahead['line']); return False
+            ans = self.registro() and self.start()            
         if not ans:
-            print(f"Syntax Error: Expected: '{self.expected}' Found: '{self.lookahead['lexeme']}', linha: {self.lookahead['line']}\n")
+            self.error()
         return ans
 
     def a(self):
@@ -118,13 +120,7 @@ class SintaxAnalyzer:
     def algoritmo(self):
         if self.lookahead['lexeme'] == '{':
             self.match('{')
-            '''
-            if self.conteudo():
-                return self.match('}')
-            '''
             ans=True
-            # while(ans and self.lookahead['lexeme'] != '}'):
-            #     ans = self.conteudo()
             while(self.lookahead['lexeme'] != '}' and self.i < len(self.input)-1):
                 result = self.conteudo()
                 if not result:
@@ -165,6 +161,9 @@ class SintaxAnalyzer:
             if self.lookahead['lexeme'] == '=':
                 self.match('=')
                 if self.expatribuicao():
+                    return self.match(';')
+            elif self.lookahead['lexeme'] == '(':
+                if self.chamadafuncao():
                     return self.match(';')
         return False
 
@@ -229,6 +228,8 @@ class SintaxAnalyzer:
             self.match('[')
             if self.nro() and self.match(']'):
                 return self.acessovarcontc()
+            elif self.ide() and self.match(']'):
+                return self.acessovarcontc()
         return False
 
     def acessovarcontc(self):
@@ -236,7 +237,10 @@ class SintaxAnalyzer:
             return True
         if self.lookahead['lexeme'] == '[':
             self.match('[')
-            return self.nro() and self.match(']')
+            if self.nro(): 
+                return self.match(']')
+            elif self.ide():
+                return self.match(']')
         return False
 
     def follow_condicional(self):
@@ -659,9 +663,7 @@ class SintaxAnalyzer:
                 if self.exparitmetica():
                     return self.expressaocont()
             else:
-                #print("exp: ", self.lookahead)
                 if self.acessovar():
-                    
                     return self.expressaocont()
         elif self.bool():
             return self.expressaocont()
@@ -762,6 +764,7 @@ class SintaxAnalyzer:
 
     def funcao(self):
         if self.lookahead['lexeme'] == 'vazio':
+            self.match('vazio')
             if self.tipocont():
                 if self.ide():
                     return self.funcaoinit()
@@ -776,8 +779,14 @@ class SintaxAnalyzer:
             self.match('(')
             if self.paraninit():
                 if self.match('{'):
-                    if self.conteudo():
-                        return self.match('}')
+                    ans=True
+                    while(self.lookahead['lexeme'] != '}' and self.i < len(self.input)-1):
+                        result = self.conteudo()
+                        if not result:
+                            self.error()
+                            ans = result
+                    return ans and self.match('}')
+        return False
 
     def tipocont(self):
         if self.lookahead['lexeme'] == '[':
@@ -803,6 +812,8 @@ class SintaxAnalyzer:
         if self.tipo():
             if self.ide():
                 return self.paraninitcont()
+        elif self.lookahead['lexeme'] == ')':
+            return self.match(')')
         return False
 
     def paraninitcont(self):

@@ -172,8 +172,8 @@ def scanner(folder_in, folder_out, index) -> list:
                 if state != 25 and state != 28:
                     if state not in error_states:
                         tokens.append({'lexeme': lexeme, 'type': type[state], 'line': nl})
-                    # else:
-                    #     errors.append({'lexeme': lexeme, 'state': state, 'line': nl})
+                    else:
+                        errors.append({'lexeme': lexeme, 'state': state, 'line': nl})
                 
                 state = 0
                 lexeme = ''
@@ -202,10 +202,9 @@ def scanner(folder_in, folder_out, index) -> list:
         lexeme = lexeme.replace('\n', ' ').strip()
         errors.append({'lexeme': lexeme, 'state': 29, 'line': nl})
     
-    if len(errors) == 0: output.write("SUCESSO!\n")
+    #if len(errors) == 0: output.write("SUCESSO!\n")
     for error in errors:
         output.write(f"{error['line']} {type[error['state']]} {error['lexeme']}\n") 
    
     input.close()
-    output.close()
     return tokens

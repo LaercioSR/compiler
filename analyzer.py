@@ -20,12 +20,10 @@ def main():
     while os.path.isfile(folder_in + f'entrada{index}.txt'):
         #sub-rotina lexico
         tokens = la.scanner(folder_in, folder_out, index)
-        #print(tokens)
 
         # execução do analisador sintatico
         print(f'\nentrada{index}.txt')
-        ans = SintaxAnalyzer(tokens).run()
-        print(f'resultado analise sintatica: {ans}')
+        SintaxAnalyzer(tokens, folder_out + f'saida{index}.txt').run()
         index = index+1
 
 
