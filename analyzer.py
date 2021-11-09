@@ -23,8 +23,9 @@ def main():
 
         # execução do analisador sintatico
         print(f'\nentrada{index}.txt')
-        output = folder_out + f'saida{index}.txt'
-        ans = SintaxAnalyzer(tokens, output).run()
+        output_file = folder_out + f'saida{index}.txt'
+        output = open(output_file, 'a')
+        ans = SintaxAnalyzer(tokens, output_file).run()
         if ans and success:
             output.write("Sucesso!\n") 
             output.close()

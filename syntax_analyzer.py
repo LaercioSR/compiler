@@ -347,8 +347,11 @@ class SintaxAnalyzer:
             elif self.lookahead['type'] == 'IDE':
                 return self.acessovar()
         elif self.lookahead['type'] in ['IDE', 'NRO']:
-            # self.valor()
-            if self.valor():
+            follow = self.follow()
+            if follow['lexeme'] in ['++','--']:
+                self.match(self.lookahead['lexeme'])
+                return self.expatribuicaocont() 
+            elif self.valor():
                 return self.expatribuicaocont() 
             return False
         return self.valor()
