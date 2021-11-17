@@ -6,13 +6,14 @@ class SintaxAnalyzer:
         self.symbol_table = []
         self.current_scope = "GLOBAL"
         self.last_ide = None
-        self.last_ide = None
         self.expected = None
         self.output = open(output_file, 'a')
+        self.semanticStatus = True
 
     def run(self):
         ans = self.start()
-        return ans
+        print(self.symbol_table)
+        return ans and self.semanticStatus
 
     def match(self, t):
         self.expected = t
@@ -36,7 +37,18 @@ class SintaxAnalyzer:
             "type": self.last_type,
             "scope": self.current_scope
         }
+        for symb in self.symbol_table:
+            if symb == symbol:
+                self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' ja foi declarada - line: {self.lookahead['line']}\n") 
+                self.semanticStatus = False
+                return
         self.symbol_table.append(symbol)
+
+    def remove_symbol(self, lexeme, scope ):
+        for symbol in self.symbol_table:
+            if symbol['lexeme'] == lexeme and symbol['scope'] == scope:
+                self.symbol_table.remove(symbol)
+                break
 
     def error(self):
         sync_tokens = [';']
@@ -119,7 +131,7 @@ class SintaxAnalyzer:
         return ans
 
     def algoritmo(self):
-        self.current_scope = "ALGORITHM"
+        self.current_scope = "ALGORITMO"
         if self.lookahead['lexeme'] == '{':
             self.match('{')
             ans=True
@@ -616,6 +628,7 @@ class SintaxAnalyzer:
     def registro(self):
         if self.ide():
             if self.match('{'):
+                self.current_scope = self.current_scope + '_REG'
                 return self.var()
         return False
 
@@ -773,13 +786,15 @@ class SintaxAnalyzer:
     def funcao(self):
         if self.lookahead['lexeme'] == 'vazio':
             self.match('vazio')
+            self.last_type = 'vazio'
             if self.tipocont():
                 if self.ide():
+                    self.save_symbol('funcao')
                     return self.funcaoinit()
         elif self.tipo():
-            self.match(self.tipo())
             if self.tipocont():
                 if self.ide():
+                    self.save_symbol('funcao')
                     return self.funcaoinit()
         return False
 
