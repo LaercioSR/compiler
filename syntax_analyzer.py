@@ -7,7 +7,7 @@ class SintaxAnalyzer:
         self.current_scope = "GLOBAL"
         self.last_ide = None
         self.expected = None
-        self.output = open(output_file, 'a')
+        self.output = open(output_file, 'a', encoding='utf-8')
         self.semanticStatus = True
 
     def run(self):
@@ -21,6 +21,7 @@ class SintaxAnalyzer:
             self.lookahead = self.next_terminal()
             return True
         else:
+            print(f"expected {t}, found {self.lookahead['lexeme']}\n")
             return False
 
     def next_terminal(self):
@@ -39,8 +40,7 @@ class SintaxAnalyzer:
         }
         for symb in self.symbol_table:
             if symb == symbol:
-                self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' ja foi declarada - line: {self.lookahead['line']}\n") 
-                self.semanticStatus = False
+                self.semanticError(symbol)
                 return
         self.symbol_table.append(symbol)
 
@@ -59,6 +59,15 @@ class SintaxAnalyzer:
             if(self.i == len(self.input)-1):
                 break
         self.lookahead = self.next_terminal()
+
+    def semanticError(self, symb, type=1):
+        if type == 1:
+            self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' ja foi declarada - line: {self.lookahead['line']}\n") 
+        elif type == 2:
+            self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' não possui conteúdo - line: {self.lookahead['line']}\n") 
+        elif type == 3:
+            self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' deve ser inteiro - line: {self.lookahead['line']}\n") 
+        self.semanticStatus = False
 
     def start(self):
         ans = False
@@ -231,16 +240,20 @@ class SintaxAnalyzer:
             return self.acessovar()
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
-            if self.nro() and self.match(']'):
+            if self.nro(1):
+                self.match(']')
+                return self.acessovarcontb()
+            elif self.ide():
+                self.match(']')
                 return self.acessovarcontb()
         return True
 
     def acessovarcontb(self):
-        if self.lookahead['lexeme'] in [',', ')']:
+        if self.lookahead['lexeme'] in [',', ')','=',';']:
             return True
         if self.lookahead['lexeme'] == '[':
             self.match('[')
-            if self.nro() and self.match(']'):
+            if self.nro(1) and self.match(']'):
                 return self.acessovarcontc()
             elif self.ide() and self.match(']'):
                 return self.acessovarcontc()
@@ -251,7 +264,7 @@ class SintaxAnalyzer:
             return True
         if self.lookahead['lexeme'] == '[':
             self.match('[')
-            if self.nro(): 
+            if self.nro(1): 
                 return self.match(']')
             elif self.ide():
                 return self.match(']')
@@ -392,8 +405,11 @@ class SintaxAnalyzer:
             return True
         return False
     
-    def nro(self):
+    def nro(self, type=0):
         if self.lookahead['type'] == 'NRO':
+            if type == 1:
+                if self.lookahead['lexeme'].find('.') >=0 :
+                    self.semanticError({'category':'index', 'lexeme':self.lookahead['lexeme']}, type=3)
             self.match(self.lookahead['lexeme'])
             return True
         return False
@@ -460,7 +476,7 @@ class SintaxAnalyzer:
             return self.valor()
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
-            ans = self.nro() and self.match(']')
+            ans = self.nro(1) and self.match(']')
             if ans:
                 return self.varinitcont()
         return False
@@ -472,7 +488,7 @@ class SintaxAnalyzer:
                 return self.vetor()
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
-            ans = self.nro() and self.match(']')
+            ans = self.nro(1) and self.match(']')
             if ans:
                 return self.varinitcontmatr()
         return False
@@ -485,7 +501,7 @@ class SintaxAnalyzer:
                     return self.vetor()
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
-            if self.nro():
+            if self.nro(1):
                 ans = self.match(']') and self.match('=') and self.match('{')
                 if ans and self.vetor():
                     if self.match(',') and self.match('{'):
@@ -805,6 +821,8 @@ class SintaxAnalyzer:
             if self.paraninit():
                 if self.match('{'):
                     ans=True
+                    if self.lookahead['lexeme'] == '}':
+                        self.semanticError({'category':'funcao', 'lexeme': self.last_ide}, type=2)
                     while(self.lookahead['lexeme'] != '}' and self.i < len(self.input)-1):
                         result = self.conteudo()
                         if not result:
