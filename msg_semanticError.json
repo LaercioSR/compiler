@@ -1,6 +1,10 @@
 [
-    "ja foi declarada",
-    "não possui conteúdo",
-    "deve ser inteiro",
-    "não foi declarada"
+  "ja foi declarada",
+  "não possui conteúdo",
+  "deve ser inteiro",
+  "não foi declarada",
+  "deve ser real",
+  "deve ser cadeia de caracteres",
+  "deve ser caractere",
+  "deve ser booleano"
 ]
