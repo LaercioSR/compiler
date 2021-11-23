@@ -1,3 +1,5 @@
+import json
+
 class SintaxAnalyzer:
     def __init__(self, input,output_file):
         self.input = input 
@@ -9,6 +11,8 @@ class SintaxAnalyzer:
         self.expected = None
         self.output = open(output_file, 'a', encoding='utf-8')
         self.semanticStatus = True
+        with open('msg_semanticError.json', 'r', encoding='utf-8') as f:
+            self.msg_error = json.load(f)
 
     def run(self):
         ans = self.start()
@@ -39,7 +43,7 @@ class SintaxAnalyzer:
             "scope": self.current_scope
         }
         for symb in self.symbol_table:
-            if symb == symbol:
+            if symbol['lexeme'] == symb['lexeme'] and symbol['scope'] == symb['scope']:
                 self.semanticError(symbol)
                 return
         self.symbol_table.append(symbol)
@@ -49,7 +53,13 @@ class SintaxAnalyzer:
             if symbol['lexeme'] == lexeme and symbol['scope'] == scope:
                 self.symbol_table.remove(symbol)
                 break
-
+  
+    def search_symbol(self, lexeme, scope):
+        for symbol in self.symbol_table:
+            if symbol['lexeme'] == lexeme and symbol['scope'] == scope:
+                return True
+        return False
+                
     def error(self):
         sync_tokens = [';']
         self.output.write(f"Syntax Error: Found: '{self.lookahead['lexeme']}', line: {self.lookahead['line']}\n") 
@@ -61,12 +71,7 @@ class SintaxAnalyzer:
         self.lookahead = self.next_terminal()
 
     def semanticError(self, symb, type=1):
-        if type == 1:
-            self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' ja foi declarada - line: {self.lookahead['line']}\n") 
-        elif type == 2:
-            self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' não possui conteúdo - line: {self.lookahead['line']}\n") 
-        elif type == 3:
-            self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' deve ser inteiro - line: {self.lookahead['line']}\n") 
+        self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' " + self.msg_error[type-1] + f" - line: {self.lookahead['line']}\n") 
         self.semanticStatus = False
 
     def start(self):
@@ -232,7 +237,11 @@ class SintaxAnalyzer:
         return False
             
     def acessovar(self):
-        return self.ide() and self.acessovarcont()
+        if self.lookahead['type'] == 'IDE':
+            if not self.search_symbol(self.lookahead['lexeme'], self.current_scope):
+                self.semanticError({'category':'VAR', 'lexeme':self.lookahead['lexeme']}, type=4)
+            return self.ide() and self.acessovarcont()
+        return False
 
     def acessovarcont(self):
         if self.lookahead['lexeme'] == '.':
@@ -828,8 +837,8 @@ class SintaxAnalyzer:
                         if not result:
                             self.error()
                             ans = result
-                        else:
-                            self.current_scope = "GLOBAL"
+                        #else:
+                    self.current_scope = "GLOBAL"
                     return ans and self.match('}')
         return False
 
