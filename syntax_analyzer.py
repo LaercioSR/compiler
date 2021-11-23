@@ -43,20 +43,19 @@ class SintaxAnalyzer:
             "scope": self.current_scope
         }
         for symb in self.symbol_table:
-            if symbol['lexeme'] == symb['lexeme'] and symbol['scope'] == symb['scope']:
+            if symbol['lexeme'] == symb['lexeme']:
                 self.semanticError(symbol)
                 return
         self.symbol_table.append(symbol)
 
-    def remove_symbol(self, lexeme, scope ):
+    def remove_symbol(self, scope ):
         for symbol in self.symbol_table:
-            if symbol['lexeme'] == lexeme and symbol['scope'] == scope:
+            if symbol['scope'] == scope:
                 self.symbol_table.remove(symbol)
-                break
   
     def search_symbol(self, lexeme, scope):
         for symbol in self.symbol_table:
-            if symbol['lexeme'] == lexeme and symbol['scope'] == scope:
+            if symbol['lexeme'] == lexeme:
                 return True
         return False
                 
@@ -838,6 +837,7 @@ class SintaxAnalyzer:
                             self.error()
                             ans = result
                         #else:
+                    self.remove_symbol(self.current_scope)
                     self.current_scope = "GLOBAL"
                     return ans and self.match('}')
         return False
@@ -865,6 +865,7 @@ class SintaxAnalyzer:
     def paraninit(self):
         if self.tipo():
             if self.ide():
+                self.save_symbol("VAR")
                 return self.paraninitcont()
         elif self.lookahead['lexeme'] == ')':
             return self.match(')')
