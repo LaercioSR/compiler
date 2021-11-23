@@ -82,9 +82,21 @@ class SintaxAnalyzer:
                 break
         self.lookahead = self.next_terminal()
 
-    def semanticError(self, symb, type=1):
-        self.output.write(f"Semantic Error:  {symb['category']} '{symb['lexeme']}' " + self.msg_error[type-1] + f" - line: {self.lookahead['line']}\n") 
+    def semanticError(self, symbol, type=1):
+        self.output.write(f"Semantic Error:  {symbol['category']} '{symbol['lexeme']}' " + self.msg_error[type-1] + f" - line: {self.lookahead['line']}\n") 
         self.semanticStatus = False
+
+    def attributionTypeError(self, symbol: dict, receivedType: str) -> None:
+        if(symbol["type"] == "inteiro"):
+            self.semanticError(symbol, 3)
+        elif(symbol["type"] == "real"):
+            self.semanticError(symbol, 5)
+        elif(symbol["type"] == "cadeia"):
+            self.semanticError(symbol, 6)
+        elif(symbol["type"] == "caractere"):
+            self.semanticError(symbol, 7)
+        elif(symbol["type"] == "booleano"):
+            self.semanticError(symbol, 8)
 
     def start(self):
         ans = False
@@ -386,7 +398,11 @@ class SintaxAnalyzer:
         return True
 
     def expatribuicao(self):
-        symb = self.get_symbol(self.last_ide)
+        symbol = self.get_symbol(self.last_ide)
+        if(symbol is None):
+            typeOperation = 0
+        else:
+            typeOperation = 1
         if self.lookahead['lexeme'] in ['++','--']:
             self.match(self.lookahead['lexeme'])
             if self.lookahead['type'] == 'NRO':
@@ -401,7 +417,7 @@ class SintaxAnalyzer:
             elif self.valor():
                 return self.expatribuicaocont() 
             return False
-        return self.valor(0, symb)
+        return self.valor(typeOperation, symbol)
         
     def expatribuicaocont(self):
         if self.lookahead['lexeme'] in ['++','--']:
@@ -565,7 +581,9 @@ class SintaxAnalyzer:
         Function for check a value
 
         Parameters:
-            type (int): Type of operation (0 -> attribution)
+            type (int): Type of operation
+                * 0 -> attribution of undeclared variable
+                * 1 -> attribution
             symbol (dict): Symbol under validation (used for attribution)
 
         Returns:
@@ -596,16 +614,14 @@ class SintaxAnalyzer:
             elif art:
                 return self.exparitmetica()
         elif self.lookahead['type'] == 'CAD':
-            if(type == 0):
+            if(type == 1):
                 if(symbol is None or symbol["type"] != "cadeia"):
-                    print(symbol)
-                    print("errooooooooo")
+                    self.attributionTypeError(symbol, "cadeia")
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'CAR':
-            if(type == 0):
-                if(symbol is None or symbol["type"] != "caracter"):
-                    print(symbol)
-                    print("errooooooooo")
+            if(type == 1):
+                if(symbol is None or symbol["type"] != "caractere"):
+                    self.attributionTypeError(symbol, "caractere")
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'NRO':
             follow = self.follow()
@@ -616,10 +632,9 @@ class SintaxAnalyzer:
             else:
                 return self.nro()
         elif self.lookahead['lexeme'] in ['verdadeiro','falso']:
-            if(type == 0):
+            if(type == 1):
                 if(symbol is None or symbol["type"] != "booleano"):
-                    print(symbol)
-                    print("errooooooooo")
+                    self.attributionTypeError(symbol, "booleano")
             follow = self.follow()
             if follow['type'] in ['REL', 'LOG']:
                 return self.expressao()
