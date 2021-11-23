@@ -50,6 +50,19 @@ class SintaxAnalyzer:
                 self.symbol_table.remove(symbol)
                 break
 
+    def get_symbol(self, lexeme: str) -> dict:
+        for symbol in self.symbol_table:
+            # if symbol['lexeme'] == lexeme and symbol['scope'] == scope:
+            if symbol['lexeme'] == lexeme:
+                return symbol
+        return None
+
+    def is_integer(self, number: str) -> bool:
+        x = self.lookahead['lexeme'].find(".")
+        if(x >= 0):
+            return False
+        return True
+
     def error(self):
         sync_tokens = [';']
         self.output.write(f"Syntax Error: Found: '{self.lookahead['lexeme']}', line: {self.lookahead['line']}\n") 
@@ -365,6 +378,7 @@ class SintaxAnalyzer:
         return True
 
     def expatribuicao(self):
+        symb = self.get_symbol(self.last_ide)
         if self.lookahead['lexeme'] in ['++','--']:
             self.match(self.lookahead['lexeme'])
             if self.lookahead['type'] == 'NRO':
@@ -379,7 +393,7 @@ class SintaxAnalyzer:
             elif self.valor():
                 return self.expatribuicaocont() 
             return False
-        return self.valor()
+        return self.valor(0, symb)
         
     def expatribuicaocont(self):
         if self.lookahead['lexeme'] in ['++','--']:
@@ -538,7 +552,17 @@ class SintaxAnalyzer:
             return self.match('}')
         return self.const()
 
-    def valor(self):
+    def valor(self, type: int = None, symbol: dict = None) -> bool:
+        """
+        Function for check a value
+
+        Parameters:
+            type (int): Type of operation (0 -> attribution)
+            symbol (dict): Symbol under validation (used for attribution)
+
+        Returns:
+            bool: Returning if code syntax code its valid
+        """
         if self.lookahead['lexeme'] == '-':
             follow = self.follow(2)
             if follow['type'] in ['REL', 'LOG']:
@@ -564,8 +588,16 @@ class SintaxAnalyzer:
             elif art:
                 return self.exparitmetica()
         elif self.lookahead['type'] == 'CAD':
+            if(type == 0):
+                if(symbol is None or symbol["type"] != "cadeia"):
+                    print(symbol)
+                    print("errooooooooo")
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'CAR':
+            if(type == 0):
+                if(symbol is None or symbol["type"] != "caracter"):
+                    print(symbol)
+                    print("errooooooooo")
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'NRO':
             follow = self.follow()
@@ -576,6 +608,10 @@ class SintaxAnalyzer:
             else:
                 return self.nro()
         elif self.lookahead['lexeme'] in ['verdadeiro','falso']:
+            if(type == 0):
+                if(symbol is None or symbol["type"] != "booleano"):
+                    print(symbol)
+                    print("errooooooooo")
             follow = self.follow()
             if follow['type'] in ['REL', 'LOG']:
                 return self.expressao()
