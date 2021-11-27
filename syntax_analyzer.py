@@ -44,7 +44,7 @@ class SintaxAnalyzer:
         }
         for symb in self.symbol_table:
             if symbol['lexeme'] == symb['lexeme']:
-                self.semanticError(symbol)
+                self.semanticError(symb)
                 return
         self.symbol_table.append(symbol)
 
@@ -64,13 +64,7 @@ class SintaxAnalyzer:
         if(x >= 0):
             return False
         return True
-  
-    def search_symbol(self, lexeme, scope):
-        for symbol in self.symbol_table:
-            if symbol['lexeme'] == lexeme:
-                return True
-        return False
-                
+
     def error(self):
         sync_tokens = [';']
         self.output.write(f"Syntax Error: Found: '{self.lookahead['lexeme']}', line: {self.lookahead['line']}\n") 
@@ -208,14 +202,19 @@ class SintaxAnalyzer:
         elif self.lookahead['lexeme'] == 'retorno':
             self.match('retorno')
             return self.retorno()
-        elif self.acessovar():
-            if self.lookahead['lexeme'] == '=':
-                self.match('=')
-                if self.expatribuicao():
-                    return self.match(';')
-            elif self.lookahead['lexeme'] == '(':
-                if self.chamadafuncao():
-                    return self.match(';')
+        elif self.lookahead['type'] == 'IDE':
+            ide = self.lookahead['lexeme']
+            if self.acessovar():
+                if self.lookahead['lexeme'] == '=':
+                    self.match('=')
+                    symbol = self.get_symbol(ide)
+                    if symbol != None and symbol['category'] == "CONST":
+                        self.semanticError(symbol, type=9)
+                    if self.expatribuicao():
+                        return self.match(';')
+                elif self.lookahead['lexeme'] == '(':
+                    if self.chamadafuncao():
+                        return self.match(';')
         return False
 
     def escreva(self):
@@ -261,8 +260,9 @@ class SintaxAnalyzer:
             
     def acessovar(self):
         if self.lookahead['type'] == 'IDE':
-            if not self.search_symbol(self.lookahead['lexeme'], self.current_scope):
-                self.semanticError({'category':'VAR', 'lexeme':self.lookahead['lexeme']}, type=4)
+            symbol = self.get_symbol(self.lookahead['lexeme'])
+            if symbol != None:
+                self.semanticError(symbol, type=4)
             return self.ide() and self.acessovarcont()
         return False
 
@@ -446,7 +446,7 @@ class SintaxAnalyzer:
         if self.lookahead['type'] == 'NRO':
             if type == 1:
                 if self.lookahead['lexeme'].find('.') >=0 :
-                    self.semanticError({'category':'index', 'lexeme':self.lookahead['lexeme']}, type=3)
+                    self.semanticError({'category':'INDEX', 'lexeme':self.lookahead['lexeme']}, type=3)
             self.match(self.lookahead['lexeme'])
             return True
         return False
@@ -863,12 +863,12 @@ class SintaxAnalyzer:
             self.last_type = 'vazio'
             if self.tipocont():
                 if self.ide():
-                    self.save_symbol('funcao')
+                    self.save_symbol('FUNCAO')
                     return self.funcaoinit()
         elif self.tipo():
             if self.tipocont():
                 if self.ide():
-                    self.save_symbol('funcao')
+                    self.save_symbol('FUNCAO')
                     return self.funcaoinit()
         return False
 
@@ -880,7 +880,7 @@ class SintaxAnalyzer:
                 if self.match('{'):
                     ans=True
                     if self.lookahead['lexeme'] == '}':
-                        self.semanticError({'category':'funcao', 'lexeme': self.last_ide}, type=2)
+                        self.semanticError({'category':'FUNCAO', 'lexeme': self.last_ide}, type=2)
                     while(self.lookahead['lexeme'] != '}' and self.i < len(self.input)-1):
                         result = self.conteudo()
                         if not result:
