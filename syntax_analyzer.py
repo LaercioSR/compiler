@@ -25,7 +25,7 @@ class SintaxAnalyzer:
             self.lookahead = self.next_terminal()
             return True
         else:
-            print(f"expected {t}, found {self.lookahead['lexeme']}\n")
+            # print(f"expected {t}, found {self.lookahead['lexeme']}\n")
             return False
 
     def next_terminal(self):
@@ -261,8 +261,8 @@ class SintaxAnalyzer:
     def acessovar(self):
         if self.lookahead['type'] == 'IDE':
             symbol = self.get_symbol(self.lookahead['lexeme'])
-            if symbol != None:
-                self.semanticError(symbol, type=4)
+            if symbol == None:
+                self.semanticError({'lexeme':self.lookahead['lexeme'], 'category':'VAR'}, type=4)
             return self.ide() and self.acessovarcont()
         return False
 
@@ -519,6 +519,8 @@ class SintaxAnalyzer:
         return False
 
     def varinitcont(self): 
+        if self.lookahead['lexeme'] == ';':
+            return True 
         if self.lookahead['lexeme'] == '=':
             self.match('=')
             if self.match('{'):
@@ -531,7 +533,9 @@ class SintaxAnalyzer:
         return False
 
     def varinitcontmatr(self):
-        if self.lookahead['lexeme'] == '{':
+        if self.lookahead['lexeme'] == ';':
+            return True  
+        elif self.lookahead['lexeme'] == '{':
             self.match('{')
             if self.vetor():
                 if self.match(',') and self.match('{'):
@@ -539,12 +543,17 @@ class SintaxAnalyzer:
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
             if self.nro(1):
-                ans = self.match(']') and self.match('=') and self.match('{')
-                if ans and self.vetor():
-                    if self.match(',') and self.match('{'):
-                        if self.vetor():
+                if self.match(']'):
+                    if self.lookahead['lexeme'] == '=':
+                        self.match('=')
+                        ans = self.match('{')
+                        if ans and self.vetor():
                             if self.match(',') and self.match('{'):
-                                return self.vetor()
+                                if self.vetor():
+                                    if self.match(',') and self.match('{'):
+                                        return self.vetor()
+                    elif self.lookahead['lexeme'] == ';':
+                        return True
         return False
             
     def vetor(self):
@@ -671,9 +680,12 @@ class SintaxAnalyzer:
         ans=False
         if self.tipo():
             if self.ide():
+                ans = True
+                if self.last_type == 'registro':
+                    self.last_type = 'registro_' + self.last_ide
+                    ans = self.ide()
                 self.save_symbol("VAR")
-                if self.varcont():
-                    ans = True
+                ans = ans and self.varcont()
         return ans
 
     def varalt(self):
@@ -700,10 +712,21 @@ class SintaxAnalyzer:
         return self.var()
 
     def registro(self):
-        if self.ide():
+        if self.lookahead['type'] == 'IDE':
+            self.last_ide = self.lookahead['lexeme']
+            self.last_type = self.lookahead['type']
+            self.ide()
             if self.match('{'):
-                self.current_scope = self.current_scope + '_REG'
-                return self.var()
+                self.save_symbol('REGISTRO')
+                self.current_scope = self.current_scope + "_" + self.last_ide
+                if self.lookahead['lexeme'] == 'variaveis':
+                    self.match('variaveis')
+                    if self.variaveis():
+                        return self.match('}')
+                else:
+                    symb = self.get_symbol(self.last_ide)
+                    self.semanticError(symb, type=2)
+                    return True
         return False
 
     def follow_exp(self):
