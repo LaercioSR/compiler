@@ -423,6 +423,7 @@ class SintaxAnalyzer:
             is_inteiro = True
 
             for i in operation["parts"]:
+                if i == None: continue
                 if i["type"] != 'inteiro':
                     is_inteiro = False
                 if i["type"] not in ['inteiro', 'real']:
@@ -557,7 +558,7 @@ class SintaxAnalyzer:
         return False
 
     def varinitcont(self): 
-        if self.lookahead['lexeme'] == ';':
+        if self.lookahead['lexeme'] in [';',',']:
             return True 
         if self.lookahead['lexeme'] == '=':
             self.match('=')
@@ -720,7 +721,7 @@ class SintaxAnalyzer:
             if self.ide():
                 ans = True
                 if self.last_type == 'registro':
-                    self.last_type = 'registro_' + self.last_ide
+                    self.last_type = 'registro ' + self.last_ide
                     ans = self.ide()
                 self.save_symbol("VAR")
                 ans = ans and self.varcont()
@@ -756,7 +757,7 @@ class SintaxAnalyzer:
             self.ide()
             if self.match('{'):
                 self.save_symbol('REGISTRO')
-                self.current_scope = self.current_scope + "_" + self.last_ide
+                self.current_scope = self.current_scope + " " + self.last_ide
                 if self.lookahead['lexeme'] == 'variaveis':
                     self.match('variaveis')
                     if self.variaveis():
