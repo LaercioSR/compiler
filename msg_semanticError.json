@@ -8,5 +8,7 @@
   "deve ser caractere",
   "deve ser booleano",
   "não pode ter o valor alterado",
-  "não pode haver divisão por zero"
+  "não pode haver divisão por zero",
+  "deve ter apenas valores numéricos nesse tipo de operação",
+  "o valor da operação deve ser um inteiro"
 ]

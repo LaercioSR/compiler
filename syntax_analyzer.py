@@ -344,7 +344,11 @@ class SintaxAnalyzer:
                     return self.match('}')
         return True
 
-    def exparitmetica(self):
+    def exparitmetica(self, symbol=None):
+        operation = {
+            "symbol": symbol,
+            "parts": []
+        }
         if self.lookahead['lexeme'] in ['++','--']:
             self.expatribuicaocont()
             if self.acessovar():
@@ -352,8 +356,10 @@ class SintaxAnalyzer:
         if self.nro():
             return self.exparitmeticacont()
         if self.acessovar():
+            part = self.get_symbol(self.last_ide)
+            operation["parts"].append(part)
             self.expatribuicaocont()
-            return self.exparitmeticacont()
+            return self.exparitmeticacont(operation)
         elif self.lookahead['lexeme'] == '-':
             self.match('-')
             if self.negativo():
@@ -369,16 +375,24 @@ class SintaxAnalyzer:
                 return self.exparitmeticacontb()
         return False
 
-    def exparitmeticacont(self):
+    def exparitmeticacont(self, operation=None):
         if self.lookahead['type'] == 'ART':
+            if self.lookahead['lexeme'] == '/':
+                type = 1
+            else:
+                type = 0
             self.match(self.lookahead['lexeme'])
-            return self.exparitmeticab()
+            return self.exparitmeticab(type, operation)
         return False
 
-    def exparitmeticab(self):
-        if self.lookahead['lexeme'] == '0':
+    def exparitmeticab(self, type=0, operation=None):
+        if type == 1 and self.lookahead['lexeme'] == '0':
             self.semanticError(type=10)
-        if self.acessovar() or self.nro():
+        if self.acessovar():
+            part = self.get_symbol(self.last_ide)
+            operation["parts"].append(part)
+            return self.exparitmeticacontb(operation)
+        elif self.nro():
             return self.exparitmeticacontb()
         elif self.lookahead['lexeme'] == '-':
             self.match('-')
@@ -395,10 +409,29 @@ class SintaxAnalyzer:
                 return self.exparitmeticacontb()
         return False
 
-    def exparitmeticacontb(self):
+    def exparitmeticacontb(self, operation=None):
         if self.lookahead['type'] == 'ART':
+            if self.lookahead['lexeme'] == '/':
+                type = 1
+            else:
+                type = 0
             self.match(self.lookahead['lexeme'])
-            return self.exparitmeticab()
+            return self.exparitmeticab(type, operation)
+
+        if operation:
+            invalid_type = False
+            is_inteiro = True
+
+            for i in operation["parts"]:
+                if i["type"] != 'inteiro':
+                    is_inteiro = False
+                if i["type"] not in ['inteiro', 'real']:
+                    invalid_type = True
+            
+            if invalid_type:
+                self.semanticError(operation["symbol"], 11)
+            if not is_inteiro and operation["symbol"]["type"] == 'inteiro':
+                self.semanticError(operation["symbol"], 12)
         return True
 
     def expatribuicao(self):
@@ -418,7 +451,7 @@ class SintaxAnalyzer:
             if follow['lexeme'] in ['++','--']:
                 self.match(self.lookahead['lexeme'])
                 return self.expatribuicaocont() 
-            elif self.valor():
+            elif self.valor(typeOperation, symbol):
                 return self.expatribuicaocont() 
             return False
         return self.valor(typeOperation, symbol)
@@ -641,7 +674,7 @@ class SintaxAnalyzer:
             if follow['type'] in ['REL', 'LOG']:
                 return self.expressao()
             elif follow['type'] == 'ART':
-                return self.exparitmetica()
+                return self.exparitmetica(symbol)
             else:
                 return self.nro()
         elif self.lookahead['lexeme'] in ['verdadeiro','falso']:
@@ -658,7 +691,7 @@ class SintaxAnalyzer:
             if follow['type'] in ['REL', 'LOG']:
                 return self.expressao()
             elif follow['type'] == 'ART':
-                return self.exparitmetica()
+                return self.exparitmetica(symbol)
             elif follow['lexeme'] == '(':
                 self.match(self.lookahead['lexeme'])
                 return self.chamadafuncao()
