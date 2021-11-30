@@ -75,8 +75,11 @@ class SintaxAnalyzer:
                 break
         self.lookahead = self.next_terminal()
 
-    def semanticError(self, symbol, type=1):
-        self.output.write(f"Semantic Error:  {symbol['category']} '{symbol['lexeme']}' " + self.msg_error[type-1] + f" - line: {self.lookahead['line']}\n") 
+    def semanticError(self, symbol=None, type=1):
+        if symbol:
+            self.output.write(f"Semantic Error:  {symbol['category']} '{symbol['lexeme']}' " + self.msg_error[type-1] + f" - line: {self.lookahead['line']}\n") 
+        else:
+            self.output.write(f"Semantic Error:  " + self.msg_error[type-1] + f" - line: {self.lookahead['line']}\n") 
         self.semanticStatus = False
 
     def attributionTypeError(self, symbol: dict, receivedType: str) -> None:
@@ -373,6 +376,8 @@ class SintaxAnalyzer:
         return False
 
     def exparitmeticab(self):
+        if self.lookahead['lexeme'] == '0':
+            self.semanticError(type=10)
         if self.acessovar() or self.nro():
             return self.exparitmeticacontb()
         elif self.lookahead['lexeme'] == '-':

@@ -7,5 +7,6 @@
   "deve ser cadeia de caracteres",
   "deve ser caractere",
   "deve ser booleano",
-  "não pode ter o valor alterado"
+  "não pode ter o valor alterado",
+  "não pode haver divisão por zero"
 ]
