@@ -82,7 +82,7 @@ class SintaxAnalyzer:
             self.output.write(f"Semantic Error:  " + self.msg_error[type-1] + f" - line: {self.lookahead['line']}\n") 
         self.semanticStatus = False
 
-    def attributionTypeError(self, symbol: dict, receivedType: str) -> None:
+    def attributionTypeError(self, symbol: dict, receivedType: str = None) -> None:
         if(symbol["type"] == "inteiro"):
             self.semanticError(symbol, 3)
         elif(symbol["type"] == "real"):
@@ -275,12 +275,15 @@ class SintaxAnalyzer:
             return self.acessovar()
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
+            token = self.lookahead['lexeme']
             if self.nro(1):
                 self.match(']')
                 return self.acessovarcontb()
             elif self.ide():
                 self.match(']')
                 return self.acessovarcontb()
+            else:
+                self.semanticError({'lexeme':token, 'category':'INDEX'}, type=3)
         return True
 
     def acessovarcontb(self):
@@ -292,6 +295,8 @@ class SintaxAnalyzer:
                 return self.acessovarcontc()
             elif self.ide() and self.match(']'):
                 return self.acessovarcontc()
+            else:
+                self.semanticError(type=3)
         return False
 
     def acessovarcontc(self):
@@ -303,6 +308,8 @@ class SintaxAnalyzer:
                 return self.match(']')
             elif self.ide():
                 return self.match(']')
+            else:
+                self.semanticError(type=3)
         return False
 
     def follow_condicional(self):
@@ -694,6 +701,8 @@ class SintaxAnalyzer:
             elif follow['type'] == 'ART':
                 return self.exparitmetica(symbol)
             elif follow['lexeme'] == '(':
+                if self.get_symbol(self.lookahead['lexeme']) == None:
+                    self.semanticError({'lexeme': self.lookahead['lexeme'], 'category': 'FUNCAO'}, type=4)
                 self.match(self.lookahead['lexeme'])
                 return self.chamadafuncao()
             else:
