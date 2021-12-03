@@ -703,6 +703,10 @@ class SintaxAnalyzer:
             elif follow['lexeme'] == '(':
                 if self.get_symbol(self.lookahead['lexeme']) == None:
                     self.semanticError({'lexeme': self.lookahead['lexeme'], 'category': 'FUNCAO'}, type=4)
+                symb = self.get_symbol(self.lookahead['lexeme'])
+                # if variable (symbol) has a different type than function return (symb)
+                if symbol['type'] != symb['type']:
+                    self.semanticError(symbol, type=13)
                 self.match(self.lookahead['lexeme'])
                 return self.chamadafuncao()
             else:
@@ -781,7 +785,7 @@ class SintaxAnalyzer:
         follow = self.follow()       
         i=1
         rel_log = art = False
-        while follow['lexeme'] not in [';','}']:
+        while follow['lexeme'] not in [';',',',')','}']:
             follow = self.follow(i)      
             if follow['type'] in ['REL','LOG']:
                 rel_log=True
