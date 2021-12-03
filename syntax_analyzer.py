@@ -8,6 +8,7 @@ class SintaxAnalyzer:
         self.symbol_table = []
         self.current_scope = "GLOBAL"
         self.last_ide = None
+        # expected symbol for type comparison
         self.expected = None
         self.output = open(output_file, 'a', encoding='utf-8')
         self.semanticStatus = True
@@ -20,7 +21,6 @@ class SintaxAnalyzer:
         return ans and self.semanticStatus
 
     def match(self, t):
-        self.expected = t
         if t == self.lookahead['lexeme']:
             self.lookahead = self.next_terminal()
             return True
@@ -213,7 +213,7 @@ class SintaxAnalyzer:
                     symbol = self.get_symbol(ide)
                     if symbol != None and symbol['category'] == "CONST":
                         self.semanticError(symbol, type=9)
-                    if self.expatribuicao():
+                    if self.expatribuicao(symbol):
                         return self.match(';')
                 elif self.lookahead['lexeme'] == '(':
                     if self.chamadafuncao():
@@ -261,13 +261,20 @@ class SintaxAnalyzer:
             return self.match(';')
         return False
             
-    def acessovar(self):
+    def acessovar(self, expected=None):
         if self.lookahead['type'] == 'IDE':
             symbol = self.get_symbol(self.lookahead['lexeme'])
             if symbol == None:
                 self.semanticError({'lexeme':self.lookahead['lexeme'], 'category':'VAR'}, type=4)
+            elif expected != None and symbol['type'] != expected['type']:
+                self.semanticError(symbol, type=13)
             return self.ide() and self.acessovarcont()
         return False
+
+    def check_ide_as_integer(self):
+        symbol = self.get_symbol(self.last_ide)
+        if symbol != None and symbol['type'] != 'inteiro':
+            self.semanticError(symbol, type=3)
 
     def acessovarcont(self):
         if self.lookahead['lexeme'] == '.':
@@ -280,8 +287,9 @@ class SintaxAnalyzer:
                 self.match(']')
                 return self.acessovarcontb()
             elif self.ide():
-                self.match(']')
-                return self.acessovarcontb()
+                self.check_ide_as_integer()
+                if self.match(']'):
+                    return self.acessovarcontb()
             else:
                 self.semanticError({'lexeme':token, 'category':'INDEX'}, type=3)
         return True
@@ -293,8 +301,10 @@ class SintaxAnalyzer:
             self.match('[')
             if self.nro(1) and self.match(']'):
                 return self.acessovarcontc()
-            elif self.ide() and self.match(']'):
-                return self.acessovarcontc()
+            elif self.ide():
+                self.check_ide_as_integer()
+                if self.match(']'):
+                    return self.acessovarcontc()
             else:
                 self.semanticError(type=3)
         return False
@@ -307,6 +317,7 @@ class SintaxAnalyzer:
             if self.nro(1): 
                 return self.match(']')
             elif self.ide():
+                self.check_ide_as_integer()
                 return self.match(']')
             else:
                 self.semanticError(type=3)
@@ -442,8 +453,10 @@ class SintaxAnalyzer:
                 self.semanticError(operation["symbol"], 12)
         return True
 
-    def expatribuicao(self):
-        symbol = self.get_symbol(self.last_ide)
+    def expatribuicao(self, symbol=None):
+        if symbol is None: 
+            symbol = self.get_symbol(self.last_ide)
+
         if(symbol is None):
             typeOperation = 0
         else:
@@ -481,18 +494,29 @@ class SintaxAnalyzer:
             return True
         return False
 
-    def ide(self):
+    def ide(self, expected=None):
         if self.lookahead['type'] == 'IDE':
             self.last_ide = self.lookahead['lexeme']
             self.match(self.lookahead['lexeme'])
             return True
         return False
     
-    def nro(self, type=0):
+    def nro(self, type=0, symbol=None):
+        """
+        Function for check a number
+
+        Parameters:
+            type (int): 1 if the number must be an integer, 0 otherwise
+            symbol (dict): symbol in symbol table
+
+        Returns:
+            bool: Returning if code syntax code its valid
+        """
         if self.lookahead['type'] == 'NRO':
             if type == 1:
+                if symbol is None: symbol = {'lexeme':self.lookahead['lexeme'], 'category':'INDEX'}
                 if self.lookahead['lexeme'].find('.') >=0 :
-                    self.semanticError({'category':'INDEX', 'lexeme':self.lookahead['lexeme']}, type=3)
+                    self.semanticError(symbol, type=3)
             self.match(self.lookahead['lexeme'])
             return True
         return False
@@ -552,15 +576,23 @@ class SintaxAnalyzer:
         return False
 
     def varinit(self):
+        symbol = self.get_symbol(self.last_ide)
+        self.expected = symbol
+        typeOperation = ( 0 if symbol is None else 1 )
         if self.lookahead['lexeme'] in [',',';']:
             return True
         if self.lookahead['lexeme'] == '=':
             self.match('=')
-            return self.valor()
+            return self.valor(typeOperation, symbol)
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
-            ans = self.nro(1) and self.match(']')
-            if ans:
+            ans = False
+            if self.lookahead['type'] == 'NRO':
+                ans = self.nro(1)
+            elif self.lookahead['type'] == 'IDE':
+                ans = self.ide()
+                self.check_ide_as_integer()
+            if ans and self.match(']'):
                 return self.varinitcont()
         return False
 
@@ -573,8 +605,13 @@ class SintaxAnalyzer:
                 return self.vetor()
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
-            ans = self.nro(1) and self.match(']')
-            if ans:
+            ans = False
+            if self.lookahead['type'] == 'NRO':
+                ans = self.nro(1)
+            elif self.lookahead['type'] == 'IDE':
+                ans = self.ide()
+                self.check_ide_as_integer()
+            if ans and self.match(']'):
                 return self.varinitcontmatr()
         return False
 
@@ -588,22 +625,29 @@ class SintaxAnalyzer:
                     return self.vetor()
         elif self.lookahead['lexeme'] == '[':
             self.match('[')
-            if self.nro(1):
-                if self.match(']'):
-                    if self.lookahead['lexeme'] == '=':
-                        self.match('=')
-                        ans = self.match('{')
-                        if ans and self.vetor():
-                            if self.match(',') and self.match('{'):
-                                if self.vetor():
-                                    if self.match(',') and self.match('{'):
-                                        return self.vetor()
-                    elif self.lookahead['lexeme'] == ';':
-                        return True
+            ans = False
+            if self.lookahead['type'] == 'NRO':
+                ans = self.nro(1)
+            elif self.lookahead['type'] == 'IDE':
+                ans = self.ide()
+                self.check_ide_as_integer()
+            if ans and self.match(']'):
+                if self.lookahead['lexeme'] == '=':
+                    self.match('=')
+                    ans = self.match('{')
+                    if ans and self.vetor():
+                        if self.match(',') and self.match('{'):
+                            if self.vetor():
+                                if self.match(',') and self.match('{'):
+                                    return self.vetor()
+                elif self.lookahead['lexeme'] == ';':
+                    return True
         return False
             
     def vetor(self):
-        if self.valor():
+        symbol = self.expected
+        typeOperation = ( 0 if symbol is None else 1 )
+        if self.valor(typeOperation, symbol):
             return self.vetorcont()
         return False
 
@@ -683,7 +727,9 @@ class SintaxAnalyzer:
                 return self.expressao()
             elif follow['type'] == 'ART':
                 return self.exparitmetica(symbol)
-            else:
+            elif type==1 and symbol['type'] == 'inteiro':
+                return self.nro(1,symbol)
+            else: 
                 return self.nro()
         elif self.lookahead['lexeme'] in ['verdadeiro','falso']:
             if(type == 1):
@@ -701,16 +747,17 @@ class SintaxAnalyzer:
             elif follow['type'] == 'ART':
                 return self.exparitmetica(symbol)
             elif follow['lexeme'] == '(':
-                if self.get_symbol(self.lookahead['lexeme']) == None:
-                    self.semanticError({'lexeme': self.lookahead['lexeme'], 'category': 'FUNCAO'}, type=4)
                 symb = self.get_symbol(self.lookahead['lexeme'])
+                # if function (symb) is not declared
+                if symb == None:
+                    self.semanticError({'lexeme': self.lookahead['lexeme'], 'category': 'FUNCAO'}, type=4)
                 # if variable (symbol) has a different type than function return (symb)
-                if symbol['type'] != symb['type']:
+                elif type == 1 and symbol['type'] != symb['type']:
                     self.semanticError(symbol, type=13)
                 self.match(self.lookahead['lexeme'])
                 return self.chamadafuncao()
             else:
-                return self.acessovar()
+                return self.acessovar(symbol)
         return False
             
     def bool(self):
