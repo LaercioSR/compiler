@@ -11,5 +11,7 @@
   "não pode haver divisão por zero",
   "deve ter apenas valores numéricos nesse tipo de operação",
   "o valor da operação deve ser um inteiro",
-  "atribuição de tipos diferentes"
+  "atribuição de tipos diferentes",
+  "retorno com tipo diferente",
+  "não possui retorno"
 ]

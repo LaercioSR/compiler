@@ -8,8 +8,11 @@ class SintaxAnalyzer:
         self.symbol_table = []
         self.current_scope = "GLOBAL"
         self.last_ide = None
+        self.last_type = None
+        self.function_parameters = []
         # expected symbol for type comparison
         self.expected = None
+        self.tag_retorno = {'status':False, 'type':'vazio'}
         self.output = open(output_file, 'a', encoding='utf-8')
         self.semanticStatus = True
         with open('msg_semanticError.json', 'r', encoding='utf-8') as f:
@@ -40,22 +43,45 @@ class SintaxAnalyzer:
             "lexeme": self.last_ide, 
             "category": category,
             "type": self.last_type,
-            "scope": self.current_scope
+            "scope": self.current_scope,
+            "parameters": self.function_parameters
         }
+        id = 1
         for symb in self.symbol_table:
-            if symbol['lexeme'] == symb['lexeme']:
+            if symbol['category'] == 'FUNCAO' and symbol['lexeme'] == symb['lexeme']:
+                if symbol['parameters'] != symb['parameters']:
+                    id = id + 1
+                else: 
+                    self.semanticError(symb)
+                    return
+            elif symbol['lexeme'] == symb['lexeme']:
                 self.semanticError(symb)
                 return
+        if symbol['category'] == 'FUNCAO': symbol['scope'] = self.current_scope = symbol['scope']+f" {id}"
         self.symbol_table.append(symbol)
 
     def remove_symbol(self, scope ):
         for symbol in self.symbol_table:
-            if symbol['scope'] == scope:
+            if symbol['scope'] == scope and symbol['category'] != 'FUNCAO':
                 self.symbol_table.remove(symbol)
 
     def get_symbol(self, lexeme: str) -> dict:
         for symbol in self.symbol_table:
             if symbol['lexeme'] == lexeme:
+                return symbol
+            elif symbol['category'] == 'FUNCAO':
+                for param in symbol['parameters']:
+                    if param['lexeme'] == lexeme:
+                        return {'lexeme':param['lexeme'],'category':'VAR','type':param['type'],'scope':symbol['scope']}
+        return None
+
+    def get_symbol_by_scope(self, scope: str) -> dict:
+        """
+        Returns the symbol of the function with given scope.
+        Note: the scope is unique
+        """
+        for symbol in self.symbol_table:
+            if symbol['scope'] == scope and symbol['category'] == 'FUNCAO':
                 return symbol
         return None
 
@@ -89,7 +115,7 @@ class SintaxAnalyzer:
             self.semanticError(symbol, 5)
         elif(symbol["type"] == "cadeia"):
             self.semanticError(symbol, 6)
-        elif(symbol["type"] == "caractere"):
+        elif(symbol["type"] == "char"):
             self.semanticError(symbol, 7)
         elif(symbol["type"] == "booleano"):
             self.semanticError(symbol, 8)
@@ -267,7 +293,10 @@ class SintaxAnalyzer:
             if symbol == None:
                 self.semanticError({'lexeme':self.lookahead['lexeme'], 'category':'VAR'}, type=4)
             elif expected != None and symbol['type'] != expected['type']:
-                self.semanticError(symbol, type=13)
+                if self.tag_retorno['status']:
+                    #self.semanticError(symbol, type=14)
+                    self.tag_retorno['type'] = symbol['type']
+                else: self.semanticError(symbol, type=13)
             return self.ide() and self.acessovarcont()
         return False
 
@@ -370,9 +399,9 @@ class SintaxAnalyzer:
         if self.lookahead['lexeme'] in ['++','--']:
             self.expatribuicaocont()
             if self.acessovar():
-                return self.exparitmeticacont()
+                return self.exparitmeticacont(operation)
         if self.nro():
-            return self.exparitmeticacont()
+            return self.exparitmeticacont(operation)
         if self.acessovar():
             part = self.get_symbol(self.last_ide)
             operation["parts"].append(part)
@@ -381,16 +410,16 @@ class SintaxAnalyzer:
         elif self.lookahead['lexeme'] == '-':
             self.match('-')
             if self.negativo():
-                return self.exparitmeticacont()
+                return self.exparitmeticacont(operation)
         elif self.lookahead['lexeme'] == '(':
             self.match('(')
-            return self.exparitmeticaparen()
+            return self.exparitmeticaparen(operation)
         return False
 
-    def exparitmeticaparen(self):
+    def exparitmeticaparen(self, operation):
         if self.exparitmetica():
             if self.match(')'):
-                return self.exparitmeticacontb()
+                return self.exparitmeticacontb(operation)
         return False
 
     def exparitmeticacont(self, operation=None):
@@ -411,20 +440,20 @@ class SintaxAnalyzer:
             operation["parts"].append(part)
             return self.exparitmeticacontb(operation)
         elif self.nro():
-            return self.exparitmeticacontb()
+            return self.exparitmeticacontb(operation)
         elif self.lookahead['lexeme'] == '-':
             self.match('-')
             if self.negativo():
-                return self.exparitmeticacontb()
+                return self.exparitmeticacontb(operation)
         elif self.lookahead['lexeme'] == '(':
             self.match('(')
-            return self.exparitmeticabparen()
+            return self.exparitmeticabparen(operation)
         return False
 
-    def exparitmeticabparen(self):
+    def exparitmeticabparen(self, operation):
         if self.exparitmetica():
             if self.match(')'):
-                return self.exparitmeticacontb()
+                return self.exparitmeticacontb(operation)
         return False
 
     def exparitmeticacontb(self, operation=None):
@@ -451,6 +480,9 @@ class SintaxAnalyzer:
                 self.semanticError(operation["symbol"], 11)
             if not is_inteiro and operation["symbol"]["type"] == 'inteiro':
                 self.semanticError(operation["symbol"], 12)
+            
+            if self.tag_retorno['status']: 
+                self.tag_retorno['type'] = ( 'inteiro' if is_inteiro else 'real' )
         return True
 
     def expatribuicao(self, symbol=None):
@@ -494,7 +526,7 @@ class SintaxAnalyzer:
             return True
         return False
 
-    def ide(self, expected=None):
+    def ide(self):
         if self.lookahead['type'] == 'IDE':
             self.last_ide = self.lookahead['lexeme']
             self.match(self.lookahead['lexeme'])
@@ -718,8 +750,8 @@ class SintaxAnalyzer:
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'CAR':
             if(type == 1):
-                if(symbol is None or symbol["type"] != "caractere"):
-                    self.attributionTypeError(symbol, "caractere")
+                if(symbol is None or symbol["type"] != "char"):
+                    self.attributionTypeError(symbol, "char")
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'NRO':
             follow = self.follow()
@@ -843,6 +875,7 @@ class SintaxAnalyzer:
         return rel_log, art
 
     def expressao(self):
+        if self.tag_retorno['status']: self.tag_retorno['type'] = 'booleano'
         if self.lookahead['lexeme'] == '(':
             self.match('(')
             rel_log, art = self.follow_exp()
@@ -985,12 +1018,10 @@ class SintaxAnalyzer:
             self.last_type = 'vazio'
             if self.tipocont():
                 if self.ide():
-                    self.save_symbol('FUNCAO')
                     return self.funcaoinit()
         elif self.tipo():
             if self.tipocont():
                 if self.ide():
-                    self.save_symbol('FUNCAO')
                     return self.funcaoinit()
         return False
 
@@ -998,6 +1029,7 @@ class SintaxAnalyzer:
         if self.lookahead['lexeme'] == '(':
             self.match('(')
             self.current_scope = "FUNC_"+self.last_ide
+            self.save_symbol('FUNCAO')
             if self.paraninit():
                 if self.match('{'):
                     ans=True
@@ -1037,9 +1069,10 @@ class SintaxAnalyzer:
     def paraninit(self):
         if self.tipo():
             if self.ide():
-                self.save_symbol("VAR")
+                self.function_parameters.append({"lexeme": self.last_ide, "type": self.last_type})
                 return self.paraninitcont()
         elif self.lookahead['lexeme'] == ')':
+            self.function_parameters = []
             return self.match(')')
         return False
 
@@ -1047,10 +1080,26 @@ class SintaxAnalyzer:
         if self.lookahead['lexeme'] == ',':
             self.match(',')
             return self.paraninit()
+        self.function_parameters = []
         return self.match(')')
 
     def retorno(self):
-        if self.valor():
+        self.tag_retorno['status']=True
+        symbol = self.get_symbol_by_scope(self.current_scope)
+        type = ( 0 if symbol is None else 1)
+        
+        # caso a função tenha tipo diferente de vazio mas n possua retorno
+        if self.lookahead['lexeme'] == ';':
+            self.match(';') 
+            if symbol['type'] != 'vazio':
+                self.semanticError(symbol, type=15)      
+            return True
+        elif self.valor(type,symbol):
+            # caso a função tenha tipo vazio e possua retorno
+            # caso a função tenha retorno com tipo diferente do que foi declarada 
+            if type and self.tag_retorno['type'] != symbol['type']:
+                self.semanticError(symbol, type=14)
+            self.tag_retorno['status']=False
             return self.match(';')
         return False
 
