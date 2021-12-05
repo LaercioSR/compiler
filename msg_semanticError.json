@@ -14,5 +14,6 @@
   "atribuição de tipos diferentes",
   "retorno com tipo diferente",
   "não possui retorno",
-  "tipo de argumento inválido"
+  "tipo de argumento inválido",
+  "número de argumentos inválidos"
 ]

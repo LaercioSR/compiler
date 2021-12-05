@@ -124,8 +124,15 @@ class SintaxAnalyzer:
         elif(symbol["type"] == "booleano"):
             self.semanticError(symbol, 8)
 
-    def parameterTypeError(self, symbol: dict, receivedType: str = None) -> None:
-        self.semanticError(symbol, 16)
+    def check_parameter(self, symbol: dict, receivedType: str = None):
+        if symbol:
+            if symbol["paran_current"] >= len(symbol["parameters"]):
+                self.semanticError(symbol, 17)
+            else:
+                if ((type == "real" and receivedType not in ["inteiro", "real"]) or
+                    (type != "real" and type != receivedType)):
+                    self.semanticError(symbol, 16)
+            symbol["paran_current"] += 1
 
     def start(self):
         ans = False
@@ -491,8 +498,13 @@ class SintaxAnalyzer:
             
             if symbol:
                 if symbol["category"] == "FUNCAO" and "paran_current" in symbol.keys():
-                    if not is_inteiro and symbol["parameters"][symbol["paran_current"]]["type"] == 'inteiro':
-                        self.parameterTypeError(symbol, "real")
+                    if is_inteiro:
+                        type = "inteiro"
+                    else:
+                        type = "real"
+                    self.check_parameter(symbol, type)
+                    # if not is_inteiro and symbol["parameters"][symbol["paran_current"]]["type"] == 'inteiro':
+                    #     self.parameterTypeError(symbol, "real")
                 else:
                     if not is_inteiro and symbol["type"] == 'inteiro':
                         self.semanticError(symbol, 12)
@@ -568,9 +580,12 @@ class SintaxAnalyzer:
                     if symbol is None: symbol = {'lexeme':self.lookahead['lexeme'], 'category':'INDEX'}
                     self.semanticError(symbol, type=3)
                 if type == 2:
-                    if symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] == "inteiro":
-                        self.parameterTypeError(symbol, "real")
+                    self.check_parameter(symbol, "real")
+                    # if symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] == "inteiro":
+                    #     self.parameterTypeError(symbol, "real")
             else:
+                if type == 2:
+                    self.check_parameter(symbol, "inteiro")
                 self.last_number["type"] = "inteiro"
 
 
@@ -774,18 +789,20 @@ class SintaxAnalyzer:
                 if(symbol is None or symbol["type"] != "cadeia"):
                     self.attributionTypeError(symbol, "cadeia")
             elif(type == 2):
-                if(symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] != "cadeia"):
-                    self.parameterTypeError(symbol, "cadeia")
-                symbol["paran_current"] += 1
+                self.check_parameter(symbol, "cadeia")
+                # if(symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] != "cadeia"):
+                #     self.parameterTypeError(symbol, "cadeia")
+                # symbol["paran_current"] += 1
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'CAR':
             if(type == 1):
                 if(symbol is None or symbol["type"] != "char"):
                     self.attributionTypeError(symbol, "char")
             elif(type == 2):
-                if(symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] != "char"):
-                    self.parameterTypeError(symbol, "char")
-                symbol["paran_current"] += 1
+                self.check_parameter(symbol, "char")
+                # if(symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] != "char"):
+                #     self.parameterTypeError(symbol, "char")
+                # symbol["paran_current"] += 1
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'NRO':
             follow = self.follow()
@@ -797,7 +814,7 @@ class SintaxAnalyzer:
                 return self.nro(1, symbol)
             elif(type == 2):
                 result = self.nro(2, symbol)
-                symbol["paran_current"] += 1
+                # symbol["paran_current"] += 1
                 return result
             else: 
                 return self.nro()
@@ -806,9 +823,10 @@ class SintaxAnalyzer:
                 if(symbol is None or symbol["type"] != "booleano"):
                     self.attributionTypeError(symbol, "booleano")
             elif(type == 2):
-                if(symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] != "booleano"):
-                    self.parameterTypeError(symbol, "booleano")
-                symbol["paran_current"] += 1
+                self.check_parameter(symbol, "booleano")
+                # if(symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] != "booleano"):
+                #     self.parameterTypeError(symbol, "booleano")
+                # symbol["paran_current"] += 1
             follow = self.follow()
             if follow['type'] in ['REL', 'LOG']:
                 return self.expressao()
