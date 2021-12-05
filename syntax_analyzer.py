@@ -828,7 +828,7 @@ class SintaxAnalyzer:
                 elif type == 1 and symbol['type'] != symb['type']:
                     self.semanticError(symbol, type=13)
                 self.match(self.lookahead['lexeme'])
-                return self.chamadafuncao()
+                return self.chamadafuncao(symb)
             else:
                 return self.acessovar(symbol)
         return False
