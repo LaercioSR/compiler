@@ -13,5 +13,6 @@
   "o valor da operação deve ser um inteiro",
   "atribuição de tipos diferentes",
   "retorno com tipo diferente",
-  "não possui retorno"
+  "não possui retorno",
+  "tipo de argumento inválido"
 ]

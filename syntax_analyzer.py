@@ -124,6 +124,9 @@ class SintaxAnalyzer:
         elif(symbol["type"] == "booleano"):
             self.semanticError(symbol, 8)
 
+    def parameterTypeError(self, symbol: dict, receivedType: str = None) -> None:
+        self.semanticError(symbol, 16)
+
     def start(self):
         ans = False
         if self.lookahead['lexeme'] == 'algoritmo':
@@ -237,16 +240,16 @@ class SintaxAnalyzer:
             return self.retorno()
         elif self.lookahead['type'] == 'IDE':
             ide = self.lookahead['lexeme']
+            symbol = self.get_symbol(ide)
+            if symbol != None and symbol['category'] == "CONST":
+                self.semanticError(symbol, type=9)
             if self.acessovar():
                 if self.lookahead['lexeme'] == '=':
                     self.match('=')
-                    symbol = self.get_symbol(ide)
-                    if symbol != None and symbol['category'] == "CONST":
-                        self.semanticError(symbol, type=9)
                     if self.expatribuicao(symbol):
                         return self.match(';')
                 elif self.lookahead['lexeme'] == '(':
-                    if self.chamadafuncao():
+                    if self.chamadafuncao(symbol):
                         return self.match(';')
         return False
 
@@ -405,9 +408,9 @@ class SintaxAnalyzer:
             if self.acessovar():
                 return self.exparitmeticacont(operation)
         if self.nro():
-            operation["parts"].append(self.last_number)
+            operation["parts"].append(self.last_number.copy())
             return self.exparitmeticacont(operation)
-        if self.acessovar():
+        elif self.acessovar():
             part = self.get_symbol(self.last_ide)
             operation["parts"].append(part)
             self.expatribuicaocont()
@@ -445,6 +448,7 @@ class SintaxAnalyzer:
             operation["parts"].append(part)
             return self.exparitmeticacontb(operation)
         elif self.nro():
+            operation["parts"].append(self.last_number.copy())
             return self.exparitmeticacontb(operation)
         elif self.lookahead['lexeme'] == '-':
             self.match('-')
@@ -471,7 +475,7 @@ class SintaxAnalyzer:
             return self.exparitmeticab(type, operation)
 
         if operation:
-            print(operation)
+            symbol = operation["symbol"]
             invalid_type = False
             is_inteiro = True
 
@@ -483,9 +487,14 @@ class SintaxAnalyzer:
                     invalid_type = True
             
             if invalid_type:
-                self.semanticError(operation["symbol"], 11)
-            if not is_inteiro and operation["symbol"]["type"] == 'inteiro':
-                self.semanticError(operation["symbol"], 12)
+                self.semanticError(symbol, 11)
+            
+            if symbol["category"] == "FUNCAO":
+                if not is_inteiro and symbol["parameters"][symbol["paran_current"]]["type"] == 'inteiro':
+                    self.parameterTypeError(symbol, "real")
+            else:
+                if not is_inteiro and symbol["type"] == 'inteiro':
+                    self.semanticError(symbol, 12)
             
             if self.tag_retorno['status']: 
                 self.tag_retorno['type'] = ( 'inteiro' if is_inteiro else 'real' )
@@ -557,8 +566,13 @@ class SintaxAnalyzer:
                 if type == 1:
                     if symbol is None: symbol = {'lexeme':self.lookahead['lexeme'], 'category':'INDEX'}
                     self.semanticError(symbol, type=3)
+                if type == 2:
+                    if symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] == "inteiro":
+                        self.parameterTypeError(symbol, "real")
             else:
                 self.last_number["type"] = "inteiro"
+
+
             self.match(self.lookahead['lexeme'])
             return True
         return False
@@ -724,6 +738,7 @@ class SintaxAnalyzer:
             type (int): Type of operation
                 * 0 -> attribution of undeclared variable
                 * 1 -> attribution
+                * 2 -> function parameter
             symbol (dict): Symbol under validation (used for attribution)
 
         Returns:
@@ -757,11 +772,19 @@ class SintaxAnalyzer:
             if(type == 1):
                 if(symbol is None or symbol["type"] != "cadeia"):
                     self.attributionTypeError(symbol, "cadeia")
+            elif(type == 2):
+                if(symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] != "cadeia"):
+                    self.parameterTypeError(symbol, "cadeia")
+                symbol["paran_current"] += 1
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'CAR':
             if(type == 1):
                 if(symbol is None or symbol["type"] != "char"):
                     self.attributionTypeError(symbol, "char")
+            elif(type == 2):
+                if(symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] != "char"):
+                    self.parameterTypeError(symbol, "char")
+                symbol["paran_current"] += 1
             return self.match(self.lookahead['lexeme'])
         elif self.lookahead['type'] == 'NRO':
             follow = self.follow()
@@ -770,13 +793,21 @@ class SintaxAnalyzer:
             elif follow['type'] == 'ART':
                 return self.exparitmetica(symbol)
             elif type==1 and symbol['type'] == 'inteiro':
-                return self.nro(1,symbol)
+                return self.nro(1, symbol)
+            elif(type == 2):
+                result = self.nro(2, symbol)
+                symbol["paran_current"] += 1
+                return result
             else: 
                 return self.nro()
         elif self.lookahead['lexeme'] in ['verdadeiro','falso']:
             if(type == 1):
                 if(symbol is None or symbol["type"] != "booleano"):
                     self.attributionTypeError(symbol, "booleano")
+            elif(type == 2):
+                if(symbol is None or symbol["parameters"][symbol["paran_current"]]["type"] != "booleano"):
+                    self.parameterTypeError(symbol, "booleano")
+                symbol["paran_current"] += 1
             follow = self.follow()
             if follow['type'] in ['REL', 'LOG']:
                 return self.expressao()
@@ -1113,25 +1144,29 @@ class SintaxAnalyzer:
             return self.match(';')
         return False
 
-    def chamadafuncao(self):
+    def chamadafuncao(self, symbol = None):
+        if symbol:
+            symbol["paran_current"] = 0
         if self.lookahead['lexeme'] == '(':
             self.match('(')
-            return self.paran()
+            return self.paran(symbol)
         return False
     
-    def paran(self):
+    def paran(self, symbol = None):
         if self.lookahead['lexeme'] == ')':
             return self.match(')')
-        return self.parancont()
+        return self.parancont(symbol)
 
-    def parancont(self):
-        if self.valor():
-            return self.paranfim()
+    def parancont(self, symbol = None):
+        if self.valor(type=2, symbol=symbol):
+            return self.paranfim(symbol)
         return False
 
-    def paranfim(self):
+    def paranfim(self, symbol = None):
         if self.lookahead['lexeme'] == ',':
             self.match(',')
-            return self.parancont()
+            return self.parancont(symbol)
         elif self.lookahead['lexeme'] == ')':
+            if symbol:
+                symbol.pop("paran_current", None)
             return self.match(')')
