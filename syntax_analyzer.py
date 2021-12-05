@@ -9,6 +9,10 @@ class SintaxAnalyzer:
         self.current_scope = "GLOBAL"
         self.last_ide = None
         self.last_type = None
+        self.last_number = {
+            "number": None,
+            "type": None
+        }
         self.function_parameters = []
         # expected symbol for type comparison
         self.expected = None
@@ -401,6 +405,7 @@ class SintaxAnalyzer:
             if self.acessovar():
                 return self.exparitmeticacont(operation)
         if self.nro():
+            operation["parts"].append(self.last_number)
             return self.exparitmeticacont(operation)
         if self.acessovar():
             part = self.get_symbol(self.last_ide)
@@ -466,6 +471,7 @@ class SintaxAnalyzer:
             return self.exparitmeticab(type, operation)
 
         if operation:
+            print(operation)
             invalid_type = False
             is_inteiro = True
 
@@ -545,10 +551,14 @@ class SintaxAnalyzer:
             bool: Returning if code syntax code its valid
         """
         if self.lookahead['type'] == 'NRO':
-            if type == 1:
-                if symbol is None: symbol = {'lexeme':self.lookahead['lexeme'], 'category':'INDEX'}
-                if self.lookahead['lexeme'].find('.') >=0 :
+            self.last_number["number"] = self.lookahead['lexeme']
+            if self.lookahead['lexeme'].find('.') >= 0:
+                self.last_number["type"] = "real"
+                if type == 1:
+                    if symbol is None: symbol = {'lexeme':self.lookahead['lexeme'], 'category':'INDEX'}
                     self.semanticError(symbol, type=3)
+            else:
+                self.last_number["type"] = "inteiro"
             self.match(self.lookahead['lexeme'])
             return True
         return False
