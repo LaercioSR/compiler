@@ -489,12 +489,13 @@ class SintaxAnalyzer:
             if invalid_type:
                 self.semanticError(symbol, 11)
             
-            if symbol["category"] == "FUNCAO":
-                if not is_inteiro and symbol["parameters"][symbol["paran_current"]]["type"] == 'inteiro':
-                    self.parameterTypeError(symbol, "real")
-            else:
-                if not is_inteiro and symbol["type"] == 'inteiro':
-                    self.semanticError(symbol, 12)
+            if symbol:
+                if symbol["category"] == "FUNCAO" and "paran_current" in symbol.keys():
+                    if not is_inteiro and symbol["parameters"][symbol["paran_current"]]["type"] == 'inteiro':
+                        self.parameterTypeError(symbol, "real")
+                else:
+                    if not is_inteiro and symbol["type"] == 'inteiro':
+                        self.semanticError(symbol, 12)
             
             if self.tag_retorno['status']: 
                 self.tag_retorno['type'] = ( 'inteiro' if is_inteiro else 'real' )
