@@ -56,6 +56,7 @@ class SintaxAnalyzer:
                 if symbol['parameters'] != symb['parameters']:
                     id = id + 1
                 else: 
+                    print("not saved: ", symbol, symb)
                     self.semanticError(symb)
                     return
             elif symbol['lexeme'] == symb['lexeme']:
@@ -78,6 +79,13 @@ class SintaxAnalyzer:
                     if param['lexeme'] == lexeme:
                         return {'lexeme':param['lexeme'],'category':'VAR','type':param['type'],'scope':symbol['scope']}
         return None
+
+    def get_functions(self, lexeme: str) -> list:
+        symbols = []
+        for symbol in self.symbol_table:
+            if symbol['lexeme'] == lexeme and symbol['category'] == 'FUNCAO':
+                symbols.append(symbol)
+        return symbols
 
     def get_symbol_by_scope(self, scope: str) -> dict:
         """
@@ -839,14 +847,34 @@ class SintaxAnalyzer:
             elif follow['type'] == 'ART':
                 return self.exparitmetica(symbol)
             elif follow['lexeme'] == '(':
-                symb = self.get_symbol(self.lookahead['lexeme'])
+                symbols = self.get_functions(self.lookahead['lexeme'])
+                self.ide()
+                symb = None
+
                 # if function (symb) is not declared
-                if symb == None:
-                    self.semanticError({'lexeme': self.lookahead['lexeme'], 'category': 'FUNCAO'}, type=4)
-                # if variable (symbol) has a different type than function return (symb)
-                elif type == 1 and symbol['type'] != symb['type']:
-                    self.semanticError(symbol, type=13)
-                self.match(self.lookahead['lexeme'])
+                if len(symbols) > 0:
+                    ans = 0
+                    i = self.i+1
+                    token = self.input[i]
+                    while token['lexeme'] != ')':
+                        if token['lexeme'] == ',':
+                            ans = ans + 1
+                        i = i+1
+                        token = self.input[i]
+                    #takes only the number of parameters, excluding delimiters
+                    ans = ans+1
+                    find = False
+                    for symb in symbols:
+                        print(ans, len(symb['parameters']))
+                        if len(symb['parameters']) == ans:
+                            find = True
+                            break
+                    print('symb find: ', symb)
+                    if symb is None or not find:
+                        self.semanticError({'lexeme':self.last_ide, 'category':'FUNCAO'},type=17)
+                    # if variable (symbol) has a different type than function return (symb)
+                    elif type == 1 and symbol['type'] != symb['type']:
+                        self.semanticError(symbol, type=13)
                 return self.chamadafuncao(symb)
             else:
                 return self.acessovar(symbol)
@@ -1073,6 +1101,7 @@ class SintaxAnalyzer:
         return False
 
     def funcao(self):
+        self.function_parameters = []
         if self.lookahead['lexeme'] == 'vazio':
             self.match('vazio')
             self.last_type = 'vazio'
@@ -1089,8 +1118,11 @@ class SintaxAnalyzer:
         if self.lookahead['lexeme'] == '(':
             self.match('(')
             self.current_scope = "FUNC_"+self.last_ide
-            self.save_symbol('FUNCAO')
+            function = [self.last_ide, self.last_type]
             if self.paraninit():
+                self.last_ide = function[0]
+                self.last_type = function[1]
+                self.save_symbol('FUNCAO')
                 if self.match('{'):
                     ans=True
                     if self.lookahead['lexeme'] == '}':
@@ -1101,8 +1133,15 @@ class SintaxAnalyzer:
                             self.error()
                             ans = result
                         #else:
+
+                    # caso a função tenha tipo diferente de vazio mas n possua retorno
+                    symbol = self.get_symbol_by_scope(self.current_scope)
+                    if not self.tag_retorno['status']:
+                        if symbol and symbol['type'] != 'vazio':
+                            self.semanticError(symbol, type=15)      
                     self.remove_symbol(self.current_scope)
                     self.current_scope = "GLOBAL"
+                    self.tag_retorno['status']=False
                     return ans and self.match('}')
         return False
 
@@ -1132,7 +1171,6 @@ class SintaxAnalyzer:
                 self.function_parameters.append({"lexeme": self.last_ide, "type": self.last_type})
                 return self.paraninitcont()
         elif self.lookahead['lexeme'] == ')':
-            self.function_parameters = []
             return self.match(')')
         return False
 
@@ -1140,7 +1178,6 @@ class SintaxAnalyzer:
         if self.lookahead['lexeme'] == ',':
             self.match(',')
             return self.paraninit()
-        self.function_parameters = []
         return self.match(')')
 
     def retorno(self):
@@ -1148,24 +1185,21 @@ class SintaxAnalyzer:
         symbol = self.get_symbol_by_scope(self.current_scope)
         type = ( 0 if symbol is None else 1)
         
-        # caso a função tenha tipo diferente de vazio mas n possua retorno
         if self.lookahead['lexeme'] == ';':
-            self.match(';') 
-            if symbol['type'] != 'vazio':
-                self.semanticError(symbol, type=15)      
-            return True
+            return self.match(';') 
         elif self.valor(type,symbol):
             # caso a função tenha tipo vazio e possua retorno
             # caso a função tenha retorno com tipo diferente do que foi declarada 
             if type and self.tag_retorno['type'] != symbol['type']:
                 self.semanticError(symbol, type=14)
-            self.tag_retorno['status']=False
             return self.match(';')
         return False
 
     def chamadafuncao(self, symbol = None):
         if symbol:
             symbol["paran_current"] = 0
+        else:
+            self.semanticError({'lexeme': self.last_ide, 'category': 'FUNCAO'}, type=4)
         if self.lookahead['lexeme'] == '(':
             self.match('(')
             return self.paran(symbol)
